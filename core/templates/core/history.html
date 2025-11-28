@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Your Scrape History</h2>
+<table>
+    <thead>
+        <tr>
+            <th>When</th>
+            <th>Query (URL)</th>
+            <th>Items</th>
+            <th>Status</th>
+            <th>Dashboard</th>
+            <th>Export</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for batch in batches %}
+            <tr>
+                <td>{{ batch.created_at|date:"Y-m-d H:i" }}</td>
+                <td title="{{ batch.query }}">{{ batch.query|truncatechars:50 }}</td>
+                <td>{{ batch.count }}</td>
+                <td>
+                    <!-- Check status of the first job in the batch -->
+                    {% with job=batch.scrapejob_set.first %}
+                        <span class="status-{{ job.status }}">{{ job.get_status_display }}</span>
+                        {% if job.status == 'error' %}
+                            <pre class="error">{{ job.note|truncatechars:100 }}</pre>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td><a href="{% url 'dashboard' batch.id %}">Open</a></td>
+                <td>
+                    <a href="{% url 'export_csv' batch.id %}">CSV</a> ·
+                    <a href="{% url 'export_json' batch.id %}">JSON</a>
+                </td>
+            </tr>
+            {% if batch.insight %}
+            <tr class="insight-row">
+                <td colspan="6"><pre>{{ batch.insight.summary }}</pre></td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

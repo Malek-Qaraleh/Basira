@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Dashboard for Batch {{ batch.id }}</h2>
+<p class="hint">Query: {{ batch.query }}</p>
+
+<p>
+    <a href="{% url 'export_csv' batch.id %}">Export as CSV</a> | 
+    <a href="{% url 'export_json' batch.id %}">Export as JSON</a>
+</p>
+
+<hr>
+
+<h3>AI-Generated Insight</h3>
+{% if insight %}
+    <pre>{{ insight.summary }}</pre>
+{% else %}
+    <p class="muted">Summary is being generated... <a href="javascript:location.reload();">(Refresh)</a></p>
+{% endif %}
+
+<hr>
+
+<!-- CHARTS SECTION -->
+<h3>Market Analysis</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 40px;">
+    
+    <!-- Chart 1: Individual Product Prices -->
+    <div style="flex: 1; min-width: 400px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+        <canvas id="priceChart"></canvas>
+    </div>
+
+    <!-- Chart 2: Price Range Distribution -->
+    <div style="flex: 1; min-width: 400px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+        <canvas id="rangeChart"></canvas>
+    </div>
+</div>
+
+<hr>
+
+<h3>Statistics</h3>
+<div class="kpis">
+    <div class="kpi"><strong>Total Items:</strong> {{ stats.count }}</div>
+    <div class="kpi"><strong>Avg. Price:</strong> ${{ stats.avg|default:"N/A" }}</div>
+    <div class="kpi"><strong>Median Price:</strong> ${{ stats.median|default:"N/A" }}</div>
+    <div class="kpi"><strong>Price Range:</strong> ${{ stats.min|default:"N/A" }} - ${{ stats.max|default:"N/A" }}</div>
+</div>
+
+<hr>
+
+<h3>Products Found (First 50)</h3>
+<div class="grid">
+    {% for product in products %}
+    <div class="card">
+        <img src="{{ product.image_url }}" alt="{{ product.title }}" onerror="this.style.display='none'">
+        <div class="title">{{ product.title|truncatechars:80 }}</div>
+        <div class="price">{{ product.currency }} {{ product.price }}</div>
+        <a href="{{ product.product_url }}" target="_blank">View Product</a>
+    </div>
+    {% empty %}
+    <p>No products found yet. The job may be running.</p>
+    {% endfor %}
+</div>
+
+<!-- CHART.JS SCRIPT -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // FIX: Use escapejs filter and double quotes to handle special characters safely
+    const labels = JSON.parse("{{ chart_labels|escapejs }}");
+    const prices = JSON.parse("{{ chart_prices|escapejs }}");
+    
+    const rangeLabels = JSON.parse("{{ range_labels|escapejs }}");
+    const rangeData = JSON.parse("{{ range_data|escapejs }}");
+
+    // 2. Price Bar Chart
+    const ctxPrice = document.getElementById('priceChart').getContext('2d');
+    new Chart(ctxPrice, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Price',
+                data: prices,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { 
+                title: { display: true, text: 'Price per Product (Top 50)' },
+                tooltip: { callbacks: { title: (c) => c[0].label } } 
+            },
+            scales: { 
+                x: { ticks: { display: false }, title: { display: true, text: 'Products' } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // 3. Price Range Doughnut Chart
+    const ctxRange = document.getElementById('rangeChart').getContext('2d');
+    new Chart(ctxRange, {
+        type: 'doughnut',
+        data: {
+            labels: rangeLabels,
+            datasets: [{
+                label: 'Product Count',
+                data: rangeData,
+                backgroundColor: [
+                    '#4bc0c0', // Budget
+                    '#36a2eb', // Mid
+                    '#ffcd56', // Premium
+                    '#ff6384'  // Luxury
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { 
+                title: { display: true, text: 'Price Range Distribution' },
+                legend: { position: 'right' }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

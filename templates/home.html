@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Welcome to your AI Web Scraper</h1>
+    <p>This is the homepage. Use the links above to get started.</p>
+    
+    {% if user.is_authenticated %}
+        <p>You are logged in. You can start a new scrape:</p>
+        <a href="{% url 'scrape' %}"><button>Start New Scrape</button></a>
+    {% else %}
+        <p>Please log in or register to start scraping.</p>
+        <a href="{% url 'login' %}"><button>Login</button></a>
+        <a href="{% url 'register' %}"><button>Register</button></a>
+    {% endif %}
+{% endblock %}

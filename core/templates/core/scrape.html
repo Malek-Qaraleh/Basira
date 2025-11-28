@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Start AI Scrape (Dumyah / Matalan)</h2>
+<p class="hint">This form uses the AI agent. Just provide a category URL.</p>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="post">{% csrf_token %}
+    
+    <div id="ai_agent_fields">
+        <label for="id_category_url">Category URL</label>
+        <input name="category_url" id="id_category_url" placeholder="https://www.temu.com/..." required>
+        
+        <label>Fields to Extract</label>
+        <div class="checkbox-group">
+            <label><input type="checkbox" name="fields" value="title" checked> title</label>
+            <label><input type="checkbox" name="fields" value="price" checked> price</label>
+            <label><input type="checkbox" name="fields" value="image_url" checked> image_url</label>
+            <label><input type="checkbox" name="fields" value="product_url" checked> product_url</label>
+            <label><input type="checkbox" name="fields" value="currency" checked> currency</label>
+            <label><input type="checkbox" name="fields" value="rating" checked> rating</label>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group form-group-small">
+            <label for="id_max_items">Max items (0 = all)</label>
+            <input name="max_items" id="id_max_items" type="number" min="0" value="{{ defaults.max_items|default:50 }}">
+        </div>
+        
+        <div class="form-group form-group-small">
+            <label for="id_max_pages">Max pages (0 = all)</label>
+            <input name="max_pages" id="id_max_pages" type="number" min="0" value="0">
+        </div>
+    </div>
+
+    <button type="submit">Scrape</button>
+</form>
+
+{% endblock %}

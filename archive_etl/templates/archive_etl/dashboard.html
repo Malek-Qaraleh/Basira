@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📚 Academic Research Tool</h2>
+    
+    <!-- New Request Form -->
+    <div class="card p-4 mb-4">
+        <h4>Start New Research</h4>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">🚀 Start Pipeline</button>
+        </form>
+    </div>
+
+    <!-- History Table -->
+    <h4>Your Research History</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Topic</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>{{ req.topic }}</td>
+                <td>{{ req.created_at|date:"M d, Y" }}</td>
+                <td>
+                    <span class="badge {% if req.status == 'COMPLETED' %}bg-success{% elif req.status == 'FAILED' %}bg-danger{% else %}bg-warning{% endif %}">
+                        {{ req.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'request_detail' req.pk %}" class="btn btn-sm btn-info">View Analysis</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No research requests yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

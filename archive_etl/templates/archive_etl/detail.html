@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{% url 'research_dashboard' %}" class="btn btn-outline-secondary mb-3">&larr; Back to Dashboard</a>
+    
+    <h2>Results: {{ req.topic }}</h2>
+    
+    <!-- AI Analysis Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5>🧠 AI Thematic Analysis</h5>
+        </div>
+        <div class="card-body">
+            {% if req.thematic_analysis %}
+                {{ req.thematic_analysis|linebreaks }}
+            {% else %}
+                <p class="text-muted">Analysis pending or failed...</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Articles List -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Source Articles ({{ req.articles.count }})</h4>
+        <a href="{% url 'export_research_csv' req.pk %}" class="btn btn-success">📥 Download Dataset (CSV)</a>
+    </div>
+
+    <ul class="list-group">
+        {% for article in req.articles.all %}
+        <li class="list-group-item">
+            <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+            <small class="text-muted ms-2">({{ article.scraped_at|date:"H:i" }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

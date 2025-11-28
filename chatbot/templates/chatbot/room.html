@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Main Container: Added 'flex-row' and 'overflow-hidden' to enforce side-by-side layout -->
+<div class="container-fluid p-0 d-flex flex-row" style="height: calc(100vh - 60px); overflow: hidden;"> 
+    
+    <!-- SIDEBAR: History -->
+    <!-- Added 'flex-shrink-0' to prevent it from being squished or wrapped -->
+    <div class="d-flex flex-column bg-light border-end flex-shrink-0" style="width: 280px; height: 100%; overflow-y: auto;">
+        
+        <!-- New Chat Button -->
+        <div class="p-3 border-bottom bg-white sticky-top">
+            <a href="{% url 'create_session' %}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                <span>+</span> New Chat
+            </a>
+        </div>
+
+        <!-- History List -->
+        <div class="list-group list-group-flush">
+            {% for session in sessions %}
+                <a href="{% url 'chat_room' session.id %}" 
+                   class="list-group-item list-group-item-action py-3 lh-sm {% if session.id == current_session.id %}active text-white{% else %}bg-light text-dark{% endif %}" 
+                   style="border-left: 0; border-right: 0;">
+                    <div class="d-flex w-100 align-items-center justify-content-between">
+                        <strong class="mb-1 text-truncate" style="max-width: 180px;">
+                            {{ session.title }}
+                        </strong>
+                    </div>
+                    <div class="col-10 mb-1 small opacity-75">
+                        {{ session.created_at|date:"M d" }}
+                    </div>
+                </a>
+            {% empty %}
+                <div class="text-center p-4 text-muted small">No history yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- MAIN CHAT AREA -->
+    <!-- Added 'min-width: 0' to prevent overflow issues -->
+    <div class="d-flex flex-column flex-grow-1" style="height: 100%; min-width: 0; position: relative;">
+        
+        <!-- Chat Header -->
+        <div class="border-bottom p-3 bg-white d-flex align-items-center shadow-sm z-1">
+            <span class="fs-4 me-2">🤖</span>
+            <h5 class="mb-0 text-truncate">{{ current_session.title }}</h5>
+        </div>
+
+        <!-- Messages Log -->
+        <div class="flex-grow-1 overflow-auto p-4" id="chat-log" style="background-color: #ffffff;">
+            {% if not current_session.messages.exists %}
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                    <h3>👋 Need Advice?</h3>
+                    <p>Ask Basira AI about marketing strategies or data analysis.</p>
+                </div>
+            {% endif %}
+
+            {% for msg in current_session.messages.all %}
+                <div class="d-flex w-100 mb-3 {% if msg.role == 'user' %}justify-content-end{% else %}justify-content-start{% endif %}">
+                    <div class="d-flex flex-column {% if msg.role == 'user' %}align-items-end{% else %}align-items-start{% endif %}" style="max-width: 70%;">
+                        <div class="p-3 rounded-3 shadow-sm 
+                            {% if msg.role == 'user' %}
+                                bg-primary text-white rounded-bottom-right-0
+                            {% else %}
+                                bg-light text-dark border rounded-bottom-left-0
+                            {% endif %}">
+                            {{ msg.content|linebreaksbr }}
+                        </div>
+                        <small class="text-muted mt-1" style="font-size: 0.7rem;">
+                            {% if msg.role == 'user' %}You{% else %}Basira AI{% endif %}
+                        </small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-3 bg-white border-top">
+            <div class="input-group input-group-lg">
+                <input type="text" id="chat-input" class="form-control border bg-light" placeholder="Type your question..." autocomplete="off">
+                <button class="btn btn-primary px-4" onclick="sendMessage()">
+                    <i class="bi bi-send"></i> Send
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rounded-bottom-right-0 { border-bottom-right-radius: 0 !important; }
+    .rounded-bottom-left-0 { border-bottom-left-radius: 0 !important; }
+    
+    .list-group-item.active {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    /* Improve scrollbars */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+</style>
+
+<script>
+    const sessionId = "{{ current_session.id }}";
+    const chatLog = document.getElementById('chat-log');
+    const chatInput = document.getElementById('chat-input');
+
+    function appendMessage(role, text) {
+        const isUser = role === 'user';
+        const alignClass = isUser ? 'justify-content-end' : 'justify-content-start';
+        const alignColClass = isUser ? 'align-items-end' : 'align-items-start';
+        const bgClass = isUser ? 'bg-primary text-white rounded-bottom-right-0' : 'bg-light text-dark border rounded-bottom-left-0';
+        const label = isUser ? 'You' : 'Basira AI';
+
+        const html = `
+            <div class="d-flex w-100 mb-3 ${alignClass}">
+                <div class="d-flex flex-column ${alignColClass}" style="max-width: 70%;">
+                    <div class="p-3 rounded-3 shadow-sm ${bgClass}">
+                        ${text.replace(/\n/g, '<br>')}
+                    </div>
+                    <small class="text-muted mt-1" style="font-size: 0.7rem;">${label}</small>
+                </div>
+            </div>
+        `;
+        chatLog.insertAdjacentHTML('beforeend', html);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        chatInput.value = '';
+        
+        try {
+            const response = await fetch(`/chatbot/${sessionId}/send/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: text})
+            });
+            const data = await response.json();
+            
+            if (data.response) {
+                appendMessage('model', data.response);
+            } else {
+                appendMessage('model', "⚠️ Error: No response.");
+            }
+        } catch (error) {
+            console.error(error);
+            appendMessage('model', "⚠️ Error: Connection failed.");
+        }
+    }
+    
+    chatInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") sendMessage();
+    });
+    
+    scrollToBottom();
+</script>
+{% endblock %}
