@@ -11,7 +11,7 @@ from .models import ResearchRequest, Article, ScrapeSource
 from .ai import perform_thematic_analysis
 from .utils import check_url_compliance
 
-# Reuse BOTH init_driver and _save_debug_snapshot from your core scraper
+# Reuse BOTH init_driver and _save_debug_snapshot from core scraper
 from core.scraper import init_driver, _save_debug_snapshot
 
 logger = logging.getLogger(__name__)

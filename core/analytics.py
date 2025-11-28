@@ -39,7 +39,7 @@ def compute_batch_stats(product_queryset):
                 "max": round(float(price_agg['max']), 2) if price_agg['max'] else 0,
             })
 
-        # --- NEW: Rating Statistics ---
+        # --- Rating Statistics ---
         if stats["has_rating"]:
             rating_agg = products_with_rating.aggregate(
                 avg_rating=Avg('rating'),

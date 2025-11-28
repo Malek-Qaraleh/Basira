@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.db.models import Count
-from .forms import RegisterForm # Assuming your forms file has RegisterForm
+from .forms import RegisterForm
 from .models import ScrapeBatch, ScrapeJob, Product, Site, BatchInsight
 from .analytics import compute_batch_stats
 import json
@@ -68,7 +68,6 @@ def scrape(request):
             site = Site.DUMYAH
         
         # 4- Create the batch and job
-        # This is the line that was crashing. It is now correct.
         batch = ScrapeBatch.objects.create(user=request.user, query=category_url) 
         job = ScrapeJob.objects.create(
             batch=batch,
@@ -77,14 +76,13 @@ def scrape(request):
             category_url=category_url,
             fields=fields,
             max_items=max_items,
-            max_pages=max_pages # Save the new field
+            max_pages=max_pages
         )
 
         # 5- Enqueue the background job
         run_ai_scrape_job.delay(job.id)
         logger.info(f"Job {job.id} enqueued to Celery.")
 
-        # This is your desired redirect
         return redirect("dashboard", batch_id=batch.id)
 
     # GET request: just show the form
@@ -105,7 +103,7 @@ def history(request):
 
 @login_required
 def dashboard(request, batch_id):
-    # This is your results page
+    # This results page
     batch = get_object_or_404(ScrapeBatch, id=batch_id, user=request.user)
     products = Product.objects.filter(job__batch=batch)
     stats = compute_batch_stats(products)
@@ -120,7 +118,7 @@ def dashboard(request, batch_id):
     chart_labels = [p.title[:15] + "..." for p in chart_products]
     chart_prices = [float(p.price) if p.price else 0 for p in chart_products]
 
-    # --- 2. Prepare Price Range Data (Replaces Ratings) ---
+    # --- 2. Prepare Price Range Data---
     # Bucket all products into price ranges to see distribution
     price_ranges = {
         'Budget (< 20)': 0,

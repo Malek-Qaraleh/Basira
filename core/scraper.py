@@ -50,7 +50,7 @@ def _guess_currency(txt):
     t = txt.lower()
     if "sar" in t or "﷼" in t: return "SAR"
     if "jod" in t or "jd" in t: return "JOD"
-    if "aed" in t: return "AED" # <-- Added for Matalan
+    if "aed" in t: return "AED"
     if "$" in t: return "USD"
     if "€" in t: return "EUR"
     if "£" in t: return "GBP"

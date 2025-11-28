@@ -25,7 +25,7 @@ class ResearchRequest(models.Model):
     topic = models.CharField(max_length=255, help_text="The research topic")
     target_url = models.URLField(max_length=1024, help_text="The specific URL to scrape")
     
-    # --- NEW FIELD: User defined limit ---
+    # --- User defined limit ---
     max_articles = models.PositiveIntegerField(
         default=10, 
         help_text="Maximum number of articles to scrape for this request."

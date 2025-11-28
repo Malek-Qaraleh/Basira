@@ -5,7 +5,7 @@ urlpatterns = [
     # Redirects to latest chat or creates new one
     path('', views.chat_redirect, name='chat_home'), 
     
-    # The main chat interface (now handles both history and active chat)
+    # The main chat interface
     path('<int:session_id>/', views.chat_room, name='chat_room'),
     
     path('create/', views.create_session, name='create_session'),

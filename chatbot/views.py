@@ -31,7 +31,6 @@ def chat_room(request, session_id):
 @login_required
 def create_session(request):
     # Simply create a new blank session for consultation
-    # No related_batch_id needed anymore
     session = ChatSession.objects.create(
         user=request.user, 
         title="New Consultation",

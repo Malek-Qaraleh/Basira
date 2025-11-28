@@ -5,8 +5,6 @@ from django.conf import settings
 
 class Site(models.TextChoices):
     # This is the enum your view is trying to import
-    SHEIN = "shein", "Shein"
-    TEMU = "temu", "Temu"
     DUMYAH = "dumyah", "DUMYAH"
     OTHER = "other", "Other"
 

@@ -48,7 +48,6 @@ def run_ai_scrape_job(self, job_id: int, headless: bool = True):
         job = ScrapeJob.objects.select_related('batch').get(id=job_id)
         batch = job.batch
         
-        # --- This is the new "brain" ---
         # We check the site to decide which strategy to use
         is_infinite_scroll = "matalanme.com" in job.site
         
@@ -74,8 +73,7 @@ def run_ai_scrape_job(self, job_id: int, headless: bool = True):
                 logger.warning(f"Wait for products failed: {e}. Trying to continue...")
                 _save_debug_snapshot(driver, f"job_{job.id}_WAIT_FAILED")
             
-            
-            # --- MODIFICATION: Choose Strategy ---
+
             
             if is_infinite_scroll:
                 # --- STRATEGY 2: INFINITE SCROLL (for Matalan) ---
@@ -129,7 +127,6 @@ def run_ai_scrape_job(self, job_id: int, headless: bool = True):
                             break
                         last_height = new_height
                     
-                    # --- VULNERABILITY FIX: Wait for Rating Attributes ---
                     RATING_STYLE_SELECTOR = 'div.product-rating [style*="width:"]'
                     try:
                         # Wait up to 5 seconds for at least one rating element to load its style.
@@ -231,7 +228,7 @@ def run_ai_scrape_job(self, job_id: int, headless: bool = True):
         else:
             logger.info("No products found or saved.")
 
-        # --- Finalize Job (Unchanged) ---
+        # --- Finalize Job ---
         job.status = ScrapeJob.Status.DONE
         job.note = f"{len(bulk)} items found from {page_count} pages."
         job.save(update_fields=["status", "note"])
