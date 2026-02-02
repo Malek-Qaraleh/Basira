@@ -47,6 +47,8 @@ def run_ai_scrape_job(self, job_id: int):
         base_url = job.category_url
 
         for item in products_data:
+            if job.max_items > 0 and created_count >= job.max_items:
+                break
             if not isinstance(item, dict): continue
             
             raw_price = item.get('price')
@@ -82,7 +84,7 @@ def run_ai_scrape_job(self, job_id: int):
             
             analysis_text = summarize_batch(stats, job.batch.query, active_sites)
             
-            # CRITICAL FIX: Assign to the object in memory instead of using .update()
+            #Assign to the object in memory 
             job.batch.ai_summary = analysis_text
 
         # 5. Finalize

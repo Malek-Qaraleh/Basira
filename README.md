@@ -53,7 +53,7 @@ Basira is an enterprise-grade web service designed for automated data extraction
 ### 1. Clone the Repository
 ```bash
 git clone [https://github.com/Malek-Qaraleh/Basira.git](https://github.com/Malek-Qaraleh/Basira.git)
-cd Basira
+cd webscraper
 
 
 2. Create a Virtual Environment

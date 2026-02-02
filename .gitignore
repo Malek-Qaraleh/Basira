@@ -65,7 +65,7 @@ coverage.xml
 *.cover
 
 # Playwright user data
-user_data/
+user_data/  
 
 
 
