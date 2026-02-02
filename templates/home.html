@@ -1,15 +1,439 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-    <h1>Welcome to your AI Web Scraper</h1>
-    <p>This is the homepage. Use the links above to get started.</p>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-navy: #1a237e;
+        --accent-blue: #3949ab;
+        --peach-bg: #fff3e0;
+        --peach-text: #e65100;
+        --text-main: #333;
+        --text-muted: #666;
+        --footer-navy: #0b1120;
+        --bg-gradient: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+    }
+
+    /* Base Typography scaled for 100% */
+    body {
+        font-size: 1rem;
+        line-height: 1.5;
+        color: var(--text-main);
+    }
+
+    /* HERO SECTION: Scaled gaps and padding */
+    .hero-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 60px 8%;
+        background-color: #fff;
+        flex-wrap: nowrap;
+        gap: 40px;
+        min-height: 60vh;
+    }
+
+    .hero-content {
+        flex: 1;
+        max-width: 50%;
+    }
+
+    .hero-content h1 {
+        font-size: 2.8rem; /* Adjusted from 3.8rem */
+        color: var(--primary-navy);
+        margin-bottom: 20px;
+        line-height: 1.15;
+        font-weight: 900;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem; /* Adjusted from 1.35rem */
+        margin-bottom: 25px;
+        color: var(--text-muted);
+    }
+
+    .badge-pill {
+        background-color: var(--peach-bg);
+        color: var(--peach-text);
+        padding: 8px 18px;
+        border-radius: 25px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
+
+    .btn-navy {
+        background-color: var(--primary-navy);
+        color: white;
+        padding: 14px 30px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: 0.3s ease;
+    }
     
-    {% if user.is_authenticated %}
-        <p>You are logged in. You can start a new scrape:</p>
-        <a href="{% url 'scrape' %}"><button>Start New Scrape</button></a>
-    {% else %}
-        <p>Please log in or register to start scraping.</p>
-        <a href="{% url 'login' %}"><button>Login</button></a>
-        <a href="{% url 'register' %}"><button>Register</button></a>
-    {% endif %}
+    .btn-navy:hover { background-color: var(--accent-blue); transform: translateY(-2px); }
+
+    .btn-outline-navy {
+        border: 2px solid var(--primary-navy);
+        color: var(--primary-navy);
+        padding: 14px 30px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 1rem;
+        margin-left: 12px;
+        display: inline-block;
+        transition: 0.3s ease;
+    }
+
+    /* DATA FLOW CARD: Fixed width adjusted from 800px to 550px for 100% zoom */
+    .flow-card {
+        flex: 0 0 550px; 
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        padding: 35px;
+        border: 1px solid #f0f4f8;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .flow-card:hover {
+        transform: scale(1.02);
+        box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+    }
+
+    .flow-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 12px;
+    }
+
+    .icon-box-styled {
+        width: 45px; height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .icon-orange { background-color: #fff3e0; color: #e65100; }
+    .icon-blue { background-color: #e3f2fd; color: #2196f3; }
+    .icon-green { background-color: #e8f5e9; color: #4caf50; }
+
+    /* HOW IT WORKS: Scaled padding and typography */
+    .how-it-works-section {
+        background-color: #FFFFFF;
+        padding: 80px 8%;
+        text-align: center;
+    }
+
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px;
+        margin-top: 50px;
+    }
+
+    .step-item {
+        padding: 15px;
+        transition: transform 0.3s ease;
+    }
+
+    .step-item:hover {
+        transform: translateY(-8px);
+    }
+
+    .step-number {
+        width: 35px; height: 35px;
+        background: var(--primary-navy);
+        color: white;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-weight: 800;
+        font-size: 1rem;
+    }
+
+    /* FEATURES: Scaled Grid and Typography */
+    .features-section {
+        background: var(--bg-gradient);
+        padding: 80px 8%;
+        text-align: center;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+        margin-top: 50px;
+    }
+
+    .feature-card {
+        background: #fff;
+        padding: 30px;
+        border-radius: 16px;
+        border: 1px solid #edf2f7;
+        text-align: left;
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border-color: var(--accent-blue);
+    }
+
+    /* COMPLIANCE: Scaled spacing and icon boxes */
+    .compliance-section {
+        background-color: #fbfcfe;
+        padding: 80px 8%;
+        text-align: center;
+    }
+
+    .comp-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+        margin-top: 50px;
+    }
+
+    .comp-card {
+        padding: 40px 25px;
+        background: #fff;
+        border-radius: 20px;
+        text-align: center;
+        border: 1px solid #f0f4f8;
+        transition: all 0.3s ease;
+    }
+
+    .comp-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        border-color: var(--primary-navy);
+    }
+
+    .comp-icon-box {
+        width: 55px; height: 55px;
+        background: var(--primary-navy);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 1.5rem;
+    }
+
+    /* FOOTER: Fixed background and scaled padding */
+    footer {
+        background: var(--footer-navy);
+        color: #fff;
+        padding: 0;
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 40px;
+        padding: 60px 8%;
+    }
+
+    /* RESPONSIVE remains standard */
+    @media (max-width: 1024px) {
+        .hero-wrapper { flex-wrap: wrap; text-align: center; }
+        .hero-content { max-width: 100%; }
+        .flow-card { flex: 1 1 100%; max-width: 450px; margin: 0 auto; }
+        .btn-outline-navy { margin-left: 0; margin-top: 12px; }
+        .steps-grid, .features-grid, .comp-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+        .steps-grid, .features-grid, .comp-grid, .footer-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="hero-wrapper">
+    <div class="hero-content">
+        <span class="badge-pill">Web Scraping Platform</span>
+        <h1>Basira – Automated Web Scraping for Competitive E-Commerce Intelligence</h1>
+        <p>Real-time competitor price tracking and structured data extraction. Make data-driven decisions with automated e-commerce intelligence.</p>
+        
+        <div class="cta-actions">
+            {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}?next={% url 'scrape' %}" class="btn-navy">Start Scraping →</a>
+                <a href="{% url 'register' %}" class="btn-outline-navy">Register</a>
+            {% else %}
+                <a href="{% url 'scrape' %}" class="btn-navy">Start New Scrape →</a>
+                <a href="{% url 'history' %}" class="btn-outline-navy">View History</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="flow-card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:25px;">
+            <span style="font-weight:800; color:var(--text-main); font-size: 1.1rem;">Real-time Data Flow</span>
+            <div style="display:flex; gap:8px;">
+                <span style="height:10px; width:10px; border-radius:50%; background:#ff9800"></span>
+                <span style="height:10px; width:10px; border-radius:50%; background:#22c55e"></span>
+                <span style="height:10px; width:10px; border-radius:50%; background:#3b82f6"></span>
+            </div>
+        </div>
+        
+        <div class="flow-row">
+            <div class="icon-box-styled icon-orange"><i class="fa-solid fa-globe"></i></div>
+            <div>
+                <div style="font-size:0.75rem; color:#94a3b8; font-weight:800; text-transform:uppercase;">Competitor Sites</div>
+                <div style="font-size:1rem; font-weight:700; color:var(--text-main);">amazon.com, ebay.com</div>
+            </div>
+        </div>
+        <div style="text-align:center; color:#3949ab; margin: 10px 0; font-size: 1.2rem;"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="flow-row">
+            <div class="icon-box-styled icon-blue"><i class="fa-solid fa-file-invoice"></i></div>
+            <div>
+                <div style="font-size:0.75rem; color:#94a3b8; font-weight:800; text-transform:uppercase;">Data Extraction</div>
+                <div style="font-size:1rem; font-weight:700; color:var(--text-main);">Prices, Reviews, Stock</div>
+            </div>
+        </div>
+        <div style="text-align:center; color:#3949ab; margin: 10px 0; font-size: 1.2rem;"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="flow-row">
+            <div class="icon-box-styled icon-green"><i class="fa-solid fa-chart-line"></i></div>
+            <div>
+                <div style="font-size:0.75rem; color:#94a3b8; font-weight:800; text-transform:uppercase;">Analytics Dashboard</div>
+                <div style="font-size:1rem; font-weight:700; color:var(--text-main);">Insights & Reports</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="how-it-works-section">
+    <h2 style="font-size: 2.2rem; color: #333; font-weight: 800;">How It Works</h2>
+    <p style="color:#666; font-size: 1.1rem;">Four simple steps to unlock competitive intelligence for your e-commerce business</p>
+    
+    <div class="steps-grid">
+        <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="icon-box-styled icon-orange" style="margin: 0 auto 15px;"><i class="fa-solid fa-crosshairs"></i></div>
+            <h4 style="font-weight:800; font-size: 1.1rem;">Paste Competitor URL</h4>
+            <p style="font-size:0.9rem; color:#666;">Simply enter the URL of any product page you want to track</p>
+        </div>
+        <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="icon-box-styled icon-orange" style="margin: 0 auto 15px; background-color: #fff7ed;"><i class="fa-solid fa-check-double"></i></div>
+            <h4 style="font-weight:800; font-size: 1.1rem;">Select Data to Extract</h4>
+            <p style="font-size:0.9rem; color:#666;">Choose what to scrape: prices, stock availability, and more</p>
+        </div>
+        <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="icon-box-styled icon-orange" style="margin: 0 auto 15px;"><i class="fa-solid fa-database"></i></div>
+            <h4 style="font-weight:800; font-size: 1.1rem;">Automated Scraping</h4>
+            <p style="font-size:0.9rem; color:#666;">Our system handles dynamic content and data processing automatically</p>
+        </div>
+        <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="icon-box-styled icon-orange" style="margin: 0 auto 15px;"><i class="fa-solid fa-chart-column"></i></div>
+            <h4 style="font-weight:800; font-size: 1.1rem;">View Insights & Export</h4>
+            <p style="font-size:0.9rem; color:#666;">Analyze trends and export data in CSV, JSON, or Excel format</p>
+        </div>
+    </div>
+</div>
+
+<div class="features-section">
+    <p style="color:var(--accent-blue); font-weight:800; font-size:0.85rem; text-transform:uppercase; margin-bottom: 8px;">Powerful Features</p>
+    <h3 style="font-size:1.8rem; font-weight:900; color: var(--primary-navy); max-width: 800px; margin: 0 auto 40px;">Enterprise-grade web scraping and analytics tools</h3>
+    
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="icon-box-styled icon-blue" style="margin-bottom:20px;"><i class="fa-solid fa-box-archive"></i></div>
+            <h4 style="font-weight:800; margin-bottom: 12px;">Automated Web Scraping</h4>
+            <p style="font-size:0.95rem;">Handle dynamic content, infinite scroll, and pagination automatically.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box-styled icon-blue" style="margin-bottom:20px;"><i class="fa-solid fa-chart-line"></i></div>
+            <h4 style="font-weight:800; margin-bottom: 12px;">Price Monitoring</h4>
+            <p style="font-size:0.95rem;">Track competitor pricing in real-time with historical data analysis.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box-styled icon-blue" style="margin-bottom:20px;"><i class="fa-solid fa-message"></i></div>
+            <h4 style="font-weight:800; margin-bottom: 12px;">NLP Analysis</h4>
+            <p style="font-size:0.95rem;">NLP-powered analysis of research articles and customer reviews.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box-styled icon-blue" style="margin-bottom:20px;"><i class="fa-solid fa-chart-area"></i></div>
+            <h4 style="font-weight:800; margin-bottom: 12px;">Historical Tracking</h4>
+            <p style="font-size:0.95rem;">Store and analyze historical trends to identify patterns.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box-styled icon-blue" style="margin-bottom:20px;"><i class="fa-solid fa-download"></i></div>
+            <h4 style="font-weight:800; margin-bottom: 12px;">Multi-Format Export</h4>
+            <p style="font-size:0.95rem;">Export your data in CSV, JSON, or Excel format for external analysis.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box-styled icon-blue" style="margin-bottom:20px;"><i class="fa-solid fa-bell"></i></div>
+            <h4 style="font-weight:800; margin-bottom: 12px;">Smart Notifications</h4>
+            <p style="font-size:0.95rem;">Get notified on job completion, failures, or market price changes.</p>
+        </div>
+    </div>
+</div>
+
+<div class="compliance-section">
+    <h3 style="font-size:1.8rem; font-weight:900; color: var(--text-main); margin-bottom: 12px;">Ethical & Compliant Scraping</h3>
+    <p style="color:#666; font-size: 1.1rem; margin-bottom: 40px;">We prioritize legal compliance and ethical data collection practices</p>
+    
+    <div class="comp-grid">
+        <div class="comp-card">
+            <div class="comp-icon-box"><i class="fa-solid fa-shield"></i></div> 
+            <h4 style="font-weight:800; margin-bottom:12px; font-size: 1.1rem;">GDPR Compliant</h4>
+            <p style="font-size:0.9rem;">Our scraping practices adhere to strict GDPR regulations and protection standards.</p>
+        </div>
+        <div class="comp-card">
+            <div class="comp-icon-box"><i class="fa-solid fa-file-signature"></i></div>
+            <h4 style="font-weight:800; margin-bottom:12px; font-size: 1.1rem;">robots.txt Awareness</h4>
+            <p style="font-size:0.9rem;">We respect robots.txt directives and crawl delay specifications of all websites.</p>
+        </div>
+        <div class="comp-card">
+            <div class="comp-icon-box"><i class="fa-solid fa-circle-check"></i></div>
+            <h4 style="font-weight:800; margin-bottom:12px; font-size: 1.1rem;">Ethical Scraping</h4>
+            <p style="font-size:0.9rem;">Rate-limited requests and responsible collection for legal business intelligence.</p>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-grid">
+        <div style="padding-right:30px;">
+            <h4 style="font-size:1.4rem; font-weight:900;">Basira</h4>
+            <p style="color:#94a3b8; font-size:0.95rem; line-height:1.6;">Automated web scraping for competitive e-commerce intelligence.</p>
+        </div>
+        <div class="footer-col">
+            <h4 style="font-size:1rem; margin-bottom:15px;">Product</h4>
+            <ul style="list-style: none; padding: 0; color: #94a3b8; font-size: 0.9rem;"><li>Features</li><li>Pricing</li><li>Docs</li></ul>
+        </div>
+        <div class="footer-col">
+            <h4 style="font-size:1rem; margin-bottom:15px;">Company</h4>
+            <ul style="list-style: none; padding: 0; color: #94a3b8; font-size: 0.9rem;"><li>About</li><li>Blog</li><li>Careers</li></ul>
+        </div>
+        <div class="footer-col">
+            <h4 style="font-size:1rem; margin-bottom:15px;">Legal</h4>
+            <ul style="list-style: none; padding: 0; color: #94a3b8; font-size: 0.9rem;"><li>Privacy</li><li>Terms</li><li>Compliance</li></ul>
+        </div>
+    </div>
+    <div style="text-align:center; border-top:1px solid #1e293b; padding:20px; font-size:0.9rem; color:#64748b; background: var(--footer-navy);">
+        © 2026 Basira. All rights reserved. Built for Capstone Project.
+    </div>
+</footer>
+
 {% endblock %}

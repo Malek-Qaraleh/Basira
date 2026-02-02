@@ -1,8 +1,12 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR.parent / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -14,8 +18,11 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "your-django-secret-key-here")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost",".ngrok.io",'kaleigh-unsophistic-applicatively.ngrok-free.dev']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://kaleigh-unsophistic-applicatively.ngrok-free.dev'
+]
 
 # Application definition
 
@@ -25,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django_extensions',
     'django.contrib.staticfiles',
     'core',  
     'archive_etl',
@@ -100,7 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Amman'
+
 
 USE_I18N = True
 
@@ -110,9 +119,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-# We'll add this later if needed
-# STATICFILES_DIRS = [ BASE_DIR / "static" ]
+STATIC_URL = '/static/'
+# Point to the source static directories for each app
+STATICFILES_DIRS = [
+    BASE_DIR / 'core' / 'static',
+    BASE_DIR / 'templates',  # if you have static files in templates dir
+]
+# Used for collectstatic in production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -120,8 +134,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Auth Redirects ---
+LOGIN_REDIRECT_URL = 'home' 
+
+# The page users are sent to if they try to access a protected view
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
 
@@ -129,18 +145,24 @@ LOGOUT_REDIRECT_URL = 'home'
 # This is where you put your 3 secret keys!
 # -------------------------------------
 
-# 1. Django Secret Key
-if SECRET_KEY == "#cva_b---)_y_=(h*ca!c1(+f3jn92y=37%o1$z2$n87-1lw6s":
-    print("WARNING: Set your DJANGO_SECRET_KEY in settings.py")
+# Get values from .env
+SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
+DEBUG = os.getenv('DEBUG', 'False') == '1'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-# 2. Gemini API Key (for parsing)
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBxMfxUmcX7QGMmpZUm8SQanTmjPFjB3XA")
-# 3. Bright Data Selenium URL (for bypassing)
-SELENIUM_REMOTE_URL = os.environ.get("SELENIUM_REMOTE_URL", "https://brd-customer-hl_6eb79aa8-zone-scraping_browser1:4qsp4r9m8ktm@brd.superproxy.io:9515")
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Asia/Amman'
+# Gemini API
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+CHATBOT_API_KEY = os.getenv("CHATBOT_API_KEY")
+HF_API_TOKEN = os.getenv('HF_API_TOKEN')
+HF_SUMMARY_MODEL = os.getenv('HF_SUMMARY_MODEL')
+
+
+
+# Scraper settings
+SAFE_SCRAPING_ENFORCED = True
+
+SCRAPER_SITE_PROFILES = {}
+SCRAPER_SITE_PROFILES_FILE = str(BASE_DIR / 'site_profiles.json')

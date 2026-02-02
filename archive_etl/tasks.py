@@ -24,10 +24,10 @@ def run_research_pipeline(self, request_id):
     
     driver = None
     try:
-        logger.info(f"🚀 Starting research pipeline for: {req.topic}")
+        logger.info(f"Starting research pipeline for: {req.topic}")
         driver = init_driver(headless=True)
         
-        logger.info(f"🌐 Navigating to target: {req.target_url}")
+        logger.info(f"Navigating to target: {req.target_url}")
         driver.get(req.target_url)
         time.sleep(5)
 
@@ -43,12 +43,12 @@ def run_research_pipeline(self, request_id):
                     except: continue
                 
                 if search_input:
-                    logger.info(f"⌨️ Found search box. Typing: '{req.topic}'")
+                    logger.info(f"Found search box. Typing: '{req.topic}'")
                     search_input.clear()
                     search_input.send_keys(req.topic)
                     search_input.send_keys(Keys.RETURN)
                     time.sleep(5)
-                    logger.info(f"🔄 Search submitted. New URL: {driver.current_url}")
+                    logger.info(f"Search submitted. New URL: {driver.current_url}")
             except Exception as e:
                 logger.warning(f"Could not interact with search form: {e}")
             
@@ -91,7 +91,7 @@ def run_research_pipeline(self, request_id):
                     if 'search' not in href and 'contact' not in href and 'login' not in href:
                         article_links.add(href)
         
-        logger.info(f"🔍 Found {len(article_links)} potential article links.")
+        logger.info(f"Found {len(article_links)} potential article links.")
 
         # --- STEP 2: Identify Source ---
         source_obj = None
@@ -108,7 +108,7 @@ def run_research_pipeline(self, request_id):
 
         # Apply User Limit
         limit = req.max_articles if req.max_articles > 0 else 10
-        logger.info(f"🛑 User requested limit: {limit} articles.")
+        logger.info(f"User requested limit: {limit} articles.")
         links_to_scrape = list(article_links)[:limit]
 
         for i, url in enumerate(links_to_scrape): 
@@ -116,7 +116,7 @@ def run_research_pipeline(self, request_id):
                 continue
             
             try:
-                logger.info(f"📄 Scraping ({i+1}/{len(links_to_scrape)}): {url}")
+                logger.info(f"Scraping ({i+1}/{len(links_to_scrape)}): {url}")
                 driver.get(url)
                 time.sleep(2)
                 
@@ -192,11 +192,11 @@ def run_research_pipeline(self, request_id):
 
             except Exception as e:
                 logger.warning(f"Failed to scrape article {url}: {e}")
-        logger.info(f"✅ Successfully processed {scraped_count} articles.")
+        logger.info(f"Successfully processed {scraped_count} articles.")
 
         # --- STEP 4: AI Analysis ---
         if scraped_count > 0:
-            logger.info("🧠 Running AI Thematic Analysis...")
+            logger.info("Running AI Thematic Analysis...")
             analysis = perform_thematic_analysis(req.topic, articles_for_ai)
             req.thematic_analysis = analysis
         else:
@@ -213,4 +213,4 @@ def run_research_pipeline(self, request_id):
     finally:
         if driver:
             driver.quit()
-            logger.info("🔒 Driver closed.")
+            logger.info("Driver closed.")

@@ -10,9 +10,11 @@ class Site(models.TextChoices):
 
 class ScrapeBatch(models.Model):
     """ A 'Batch' is one click of the 'Scrape' button. It groups jobs. """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) # This is required
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) 
     query = models.CharField(max_length=200, blank=True) 
+    ai_summary = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    duration = models.FloatField(null=True, blank=True)
     
     def __str__(self):
         return f"Batch {self.id} ({self.query})"
@@ -28,12 +30,13 @@ class ScrapeJob(models.Model):
 
     batch = models.ForeignKey(ScrapeBatch, on_delete=models.CASCADE, related_name="scrapejob_set")
     site = models.CharField(max_length=32, choices=Site.choices, default=Site.OTHER)
+    note = models.TextField(blank=True, null=True)
     
     category_url = models.URLField(max_length=1024, default="")
     fields = models.JSONField(default=list) 
     
     max_items = models.PositiveIntegerField(
-        default=50,
+        default=0,
         help_text="Max items to scrape. 0 for no limit."
     )
     
@@ -41,6 +44,19 @@ class ScrapeJob(models.Model):
     max_pages = models.PositiveIntegerField(
         default=0, # 0 means no limit
         help_text="Max pages to scrape. 0 for no limit."
+    )
+    
+    # NEW: Pagination type field
+    class PaginationType(models.TextChoices):
+        SINGLE = 'single', 'Single Page Only'
+        NEXT_BUTTON = 'next', 'Next Button'
+        INFINITE_SCROLL = 'infinite', 'Infinite Scroll'
+    
+    pagination_type = models.CharField(
+        max_length=20,
+        choices=PaginationType.choices,
+        default=PaginationType.SINGLE,
+        help_text="How does the website load more products?"
     )
     
     status = models.CharField(
@@ -52,6 +68,7 @@ class ScrapeJob(models.Model):
     note = models.TextField(blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
     selectors = models.JSONField(default=dict, blank=True)
+    used_api = models.BooleanField(default=False, help_text="Whether internal API was used")
 
 class Product(models.Model):
     """ One product found during a scrape. """

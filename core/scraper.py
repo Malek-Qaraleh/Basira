@@ -27,7 +27,7 @@ def _save_debug_snapshot(driver, name: str):
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         driver.save_screenshot(png_path)
-        logger.info(f"📸 Saved debug snapshot: {name}.png")
+        logger.info(f"Saved debug snapshot: {name}.png")
     except Exception as e:
         logger.warning(f"Failed to save debug snapshot: {e}")
 
@@ -80,7 +80,7 @@ def _parse_review_count(txt):
         return None
 
 def init_driver(headless=True):
-    logger.info("🚀 Initializing LOCAL Selenium driver (STEALTH Mode)...")
+    logger.info("Initializing LOCAL Selenium driver (STEALTH Mode)...")
     
     chrome_options = webdriver.ChromeOptions()
     if headless:
@@ -105,7 +105,7 @@ def init_driver(headless=True):
         s = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=s, options=chrome_options)
         
-        logger.info("🤖 Applying selenium-stealth patches...")
+        logger.info("Applying selenium-stealth patches...")
         stealth(driver,
               languages=["en-US", "en"],
               vendor="Google Inc.",
@@ -120,160 +120,50 @@ def init_driver(headless=True):
         logger.info("✓ Local stealth driver initialized successfully.")
         return driver
     except Exception as e:
-        logger.error(f"❌ Failed to initialize local driver: {e}", exc_info=True)
+        logger.error(f" Failed to initialize local driver: {e}", exc_info=True)
         raise RuntimeError(f"Failed to start local Chrome: {e}") from e
 
 def _handle_common_consent(driver):
-    logger.info("🍪 Checking for consent/cookie popups...")
+    logger.info("Checking for consent/cookie popups...")
     logger.info(" (No consent popup found)")
     pass
 
+def validate_title(title):
+    """Ensure the title is not empty or a placeholder."""
+    if not title or title.lower() in ["title", "placeholder"]:
+        return None
+    return title
 
-# --- Parser V1 (Dumyah) ---
-def extract_with_manual_parser_v1(soup, base_url, containers):
-    logger.info("Using parser V1 (product-card)...")
-    products = []
-    logger.info(f"Found {len(containers)} product containers using 'div.product-card'")
-    
-    for item in containers:
-        def get_text(element):
-            if not element: return ""
-            text = element.get_text(strip=True)
-            try: return text.encode('latin-1').decode('utf-8')
-            except (UnicodeEncodeError, UnicodeDecodeError): return text
-        
-        title_element = item.select_one("div.product-title")
-        price_element = item.select_one("span.current-price")
-        img_element = item.select_one("img.product-image")
-        url_element = title_element.find_parent('a') if title_element else None
-        rating_element = item.select_one("span.stars-img.black-fill")
-        
-        title = get_text(title_element)
-        price_str = get_text(price_element)
-        product_url = _abs(url_element.get('href'), base_url) if url_element else ""
-        image_url = _abs(img_element.get('data-src') or img_element.get('src'), base_url)
-        rating_style = rating_element.get('style') if rating_element else ""
-        rating = _parse_rating_from_style(rating_style)
-        
-        if not title and not product_url: continue
-        products.append({
-            "title": title, "price": _parse_price(price_str),
-            "currency": _guess_currency(price_str) or "JOD",
-            "product_url": product_url, "image_url": image_url,
-            "rating": rating,
-        })
-    return products
+def validate_url(url, base):
+    """Ensure the URL is absolute and valid."""
+    abs_url = _abs(url, base)
+    if not abs_url or not abs_url.startswith("http"):
+        return None
+    return abs_url
 
-# --- Parser V2 (Dumyah) ---
-def extract_with_manual_parser_v2(soup, base_url, containers):
-    logger.info("Using parser V2 (product-wrapper)...")
-    products = []
-    logger.info(f"Found {len(containers)} product containers using 'div.product-wrapper'")
-    
-    selectors = {
-        "title": "div.name", "price": "div.price",
-        "product_url": "div.image > a", "image_url": "img.first-image",
-        "rating_span": "span.stars-img.black-fill",
-    }
-    
-    for item in containers:
-        def get_text(element):
-            if not element: return ""
-            text = element.get_text(strip=True)
-            try: return text.encode('latin-1').decode('utf-8')
-            except (UnicodeEncodeError, UnicodeDecodeError): return text
+def deduplicate_data(data):
+    """Remove duplicate entries based on unique URLs."""
+    seen = set()
+    unique_data = []
+    for entry in data:
+        url = entry.get("url")
+        if url not in seen:
+            seen.add(url)
+            unique_data.append(entry)
+    return unique_data
 
-        title_element = item.select_one(selectors["title"])
-        price_element = item.select_one(selectors["price"])
-        url_element = item.select_one(selectors["product_url"])
-        img_element = item.select_one(selectors["image_url"])
-        rating_element = item.select_one(selectors["rating_span"])
+# Example usage in scraping logic
+def scrape_page(driver, base_url):
+    """Scrape a single page and return structured data."""
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    items = []
 
-        title = get_text(title_element)
-        price_str = get_text(price_element)
-        product_url = _abs(url_element.get('href'), base_url) if url_element else ""
-        
-        image_url = ""
-        if img_element:
-            image_url = _abs(img_element.get('data-src') or img_element.get('src'), base_url)
-        
-        rating_style = rating_element.get('style') if rating_element else ""
-        rating = _parse_rating_from_style(rating_style)
-        
-        if not title and not product_url: continue
-        products.append({
-            "title": title, "price": _parse_price(price_str),
-            "currency": _guess_currency(price_str) or "JOD",
-            "product_url": product_url, "image_url": image_url,
-            "rating": rating
-        })
-    return products
+    for element in soup.select(".item-selector"):  # Replace with actual selector
+        title = validate_title(element.select_one(".title-selector").get_text(strip=True))
+        url = validate_url(element.select_one("a")["href"], base_url)
 
-# --- V3 Parser (for Matalan) ---
-def extract_with_manual_parser_v3(soup, base_url, containers):
-    """
-    Parser for the "div.productItem_product_item__OL0G5" layout (e.g., Matalan).
-    """
-    logger.info("Using parser V3 (productItem)...")
-    products = []
-    logger.info(f"Found {len(containers)} product containers")
-    
-    for item in containers:
-        def get_text(element):
-            return element.get_text(strip=True) if element else ""
+        if title and url:
+            items.append({"title": title, "url": url})
 
-        # Selectors based on the new HTML
-        url_element = item.select_one("a")
-        title_element = item.select_one("h4.productItem_product_name__tj_VU")
-        price_element = item.select_one("span.product_price")
-        img_element = item.select_one("figure.productItem_img_container__usjWD img")
-
-        title = get_text(title_element)
-        price_str = get_text(price_element)
-        product_url = _abs(url_element.get('href'), base_url) if url_element else ""
-        
-        image_url = ""
-        if img_element:
-            # This site uses 'srcset', let's grab the 'src' fallback
-            image_url = _abs(img_element.get('src'), base_url)
-        
-        if not title and not product_url:
-            continue
-            
-        products.append({
-            "title": title,
-            "price": _parse_price(price_str),
-            "currency": _guess_currency(price_str) or "AED",
-            "product_url": product_url,
-            "image_url": image_url,
-        })
-    return products
-
-
-# --- Master extract_data function ---
-def extract_data(html_content, base_url):
-    """
-    Master function to analyze HTML and choose the correct parser.
-    """
-    logger.info("⚡ Detecting page layout...")
-    try:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # Check which layout is dominant
-        v1_cards = soup.select("div.product-card")
-        v2_cards = soup.select("div.product-wrapper")
-        v3_cards = soup.select("div.productItem_product_item__OL0G5") 
-        
-        if len(v1_cards) > len(v2_cards) and len(v1_cards) > len(v3_cards):
-            return extract_with_manual_parser_v1(soup, base_url, v1_cards)
-        elif len(v2_cards) > len(v1_cards) and len(v2_cards) > len(v3_cards):
-            return extract_with_manual_parser_v2(soup, base_url, v2_cards)
-        elif len(v3_cards) > 0:
-            return extract_with_manual_parser_v3(soup, base_url, v3_cards)
-        else:
-            logger.warning("No known product containers found. 0 products.")
-            return []
-            
-    except Exception as e:
-        logger.error(f"❌ BeautifulSoup extraction failed: {e}", exc_info=True)
-        return []
+    # Deduplicate before returning
+    return deduplicate_data(items)

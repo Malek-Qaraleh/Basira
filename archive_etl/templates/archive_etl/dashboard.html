@@ -1,48 +1,295 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>📚 Academic Research Tool</h2>
-    
-    <!-- New Request Form -->
-    <div class="card p-4 mb-4">
-        <h4>Start New Research</h4>
-        <form method="post">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-navy: #1a237e;
+        --border-light: #E5E7EB;
+        --text-muted: #64748b;
+        --input-bg: #f3f4f6;
+        --success-bg: #dcfce7;
+        --success-text: #166534;
+        --error-bg: #fee2e2;
+        --error-text: #991b1b;
+        --pending-bg: #ffedd5;
+        --pending-text: #9a3412;
+    }
+
+    .research-dashboard-container {
+        padding: 40px 5%; 
+        background-color: #FFFFFF;
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        margin-bottom: 30px; 
+    }
+
+    .dashboard-header h1 {
+        font-size: 2.2rem; 
+        font-weight: 900;
+        color: #1e293b;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-header p {
+        font-size: 1.1rem; 
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .research-card {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: 16px; 
+        padding: 30px; 
+        margin-bottom: 40px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+    }
+
+    .research-card h3 {
+        font-size: 1.25rem; 
+        font-weight: 800;
+        margin-bottom: 20px;
+        color: #1e293b;
+    }
+
+    .research-form label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+        color: #1e293b;
+    }
+
+    .research-form input, .research-form textarea {
+        width: 100%;
+        padding: 12px 16px; 
+        background-color: var(--input-bg);
+        border: 2px solid transparent;
+        border-radius: 10px;
+        font-size: 0.95rem; 
+        margin-bottom: 15px; 
+        transition: all 0.2s;
+    }
+
+    .research-form input:focus {
+        outline: none;
+        background-color: #fff;
+        border-color: var(--primary-navy);
+    }
+
+    .form-actions-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 5px;
+    }
+
+    .btn-start-pipeline {
+        background-color: var(--primary-navy);
+        color: white;
+        border: none;
+        padding: 14px 35px; 
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+
+    .btn-start-pipeline:hover {
+        transform: translateY(-2px);
+        background-color: #141b63;
+    }
+
+    .btn-start-pipeline:disabled {
+        background-color: var(--text-muted);
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid var(--border-light);
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .history-table th {
+        background: #fcfcfd;
+        padding: 16px 25px; 
+        text-align: left;
+        font-size: 0.85rem; 
+        font-weight: 800;
+        color: #1e293b;
+        border-bottom: 2px solid #f1f5f9;
+        text-transform: uppercase;
+    }
+
+    .history-table td {
+        padding: 18px 25px; 
+        font-size: 0.95rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .status-badge {
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .bg-completed { background-color: var(--success-bg); color: var(--success-text); }
+    .bg-failed { background-color: var(--error-bg); color: var(--error-text); }
+    .bg-pending { background-color: var(--pending-bg); color: var(--pending-text); }
+    .bg-running { background-color: #dbeafe; color: #1e40af; }
+
+    .view-link {
+        color: var(--primary-navy);
+        font-weight: 800;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .view-link:hover { text-decoration: underline; }
+</style>
+
+<div class="research-dashboard-container">
+    <div class="dashboard-header">
+        <h1>Academic Research Tool</h1>
+        <p>Synthesize academic insights with automated thematic analysis.</p>
+    </div>
+
+    <div class="research-card">
+        <h3>Start New Pipeline</h3>
+        <form method="post" class="research-form" id="researchForm">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">🚀 Start Pipeline</button>
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                </div>
+            {% endfor %}
+            
+            <div class="form-actions-row">
+                <button type="submit" class="btn-start-pipeline" id="submitBtn">
+                    <i class="fa-solid fa-rocket"></i> Start Pipeline
+                </button>
+            </div>
         </form>
     </div>
 
-    <!-- History Table -->
-    <h4>Your Research History</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Topic</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for req in requests %}
-            <tr>
-                <td>{{ req.topic }}</td>
-                <td>{{ req.created_at|date:"M d, Y" }}</td>
-                <td>
-                    <span class="badge {% if req.status == 'COMPLETED' %}bg-success{% elif req.status == 'FAILED' %}bg-danger{% else %}bg-warning{% endif %}">
-                        {{ req.get_status_display }}
-                    </span>
-                </td>
-                <td>
-                    <a href="{% url 'request_detail' req.pk %}" class="btn btn-sm btn-info">View Analysis</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4">No research requests yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="dashboard-header" style="margin-top: 50px; margin-bottom: 20px;">
+        <h2 style="font-weight: 900; color: #1e293b; font-size: 1.6rem;">Research History</h2>
+    </div>
+
+    <div class="table-container">
+        <table class="history-table" id="historyTable">
+            <thead>
+                <tr>
+                    <th>Research Topic</th>
+                    <th>Created Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr class="research-row" data-id="{{ req.pk }}" data-status="{{ req.status }}">
+                    <td>
+                        <strong style="color: #1e293b; font-size: 1rem;">{{ req.topic }}</strong>
+                    </td>
+                    <td style="font-weight: 600; color: var(--text-muted);">
+                        {{ req.created_at|date:"M d, Y" }}
+                    </td>
+                    <td>
+                        <span class="status-badge bg-{{ req.status|lower }}">
+                            {% if req.status == 'PENDING' %}<i class="fa-solid fa-spinner fa-spin"></i>{% endif %}
+                            {% if req.status == 'RUNNING' %}<i class="fa-solid fa-circle-notch fa-spin"></i>{% endif %}
+                            {{ req.get_status_display|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'request_detail' req.pk %}" class="view-link">
+                            <i class="fa-solid fa-chart-line"></i> View Analysis
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 60px; color: var(--text-muted);">
+                        <i class="fa-solid fa-folder-open fa-2x mb-2"></i>
+                        <p>No research requests yet. Start your first pipeline above.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script>
+    // Loading State for Submit Button
+    document.getElementById('researchForm').addEventListener('submit', function() {
+        const btn = document.getElementById('submitBtn');
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Initializing Pipeline...';
+        btn.disabled = true;
+    });
+
+    // Auto-Refresh Logic for Pending/Running Tasks
+    async function pollResearchStatus() {
+        // Find rows that are not yet COMPLETED or FAILED
+        const activeRows = document.querySelectorAll('.research-row');
+        let needsRefresh = false;
+
+        for (let row of activeRows) {
+            const status = row.getAttribute('data-status');
+            const reqId = row.getAttribute('data-id');
+
+            if (status === 'PENDING' || status === 'RUNNING') {
+                try {
+                    // This fetches the status from your existing request_detail or a status endpoint
+                    const response = await fetch(`/research/status/${reqId}/`);
+                    const data = await response.json();
+
+                    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+                        needsRefresh = true;
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }
+        }
+
+        if (needsRefresh) {
+            location.reload();
+        }
+    }
+
+    // Check status every 5 seconds if there are active tasks
+    const hasActiveTasks = document.querySelector('.research-row[data-status="PENDING"], .research-row[data-status="RUNNING"]');
+    if (hasActiveTasks) {
+        setInterval(pollResearchStatus, 5000);
+    }
+</script>
+
 {% endblock %}

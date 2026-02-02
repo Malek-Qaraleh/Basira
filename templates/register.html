@@ -1,22 +1,254 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-    <h2>Register</h2>
-    {% if form.non_field_errors %}
-        <p class="error">{{ form.non_field_errors|join:", " }}</p>
-    {% endif %}
-    
-    <form method="post">
-        {% csrf_token %}
-        {% for field in form %}
-            <div>
-                <label>{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <p class="error">{{ field.errors|join:", " }}</p>
-                {% endif %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-navy: #1a237e;
+        --border-light: #E5E7EB;
+        --text-muted: #64748b;
+        --input-bg: #f3f4f6;
+    }
+
+    .auth-page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 70px);
+        background-color: #fff;
+        padding: 20px;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .auth-header h1 {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: #1e293b;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .auth-header p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 500px; 
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        border: 1px solid var(--border-light);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Global Error Notification */
+    .notification-banner {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fee2e2; 
+        color: #991b1b; 
+        border: 1px solid #fecaca;
+    }
+
+    .error-list-container {
+        background: #fff1f2;
+        color: #be123c;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.85rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 800;
+        color: #1e293b;
+        font-size: 0.85rem;
+    }
+
+    .auth-card input[type="text"], 
+    .auth-card input[type="email"], 
+    .auth-card input[type="password"] {
+        width: 100%;
+        padding: 10px 14px;
+        background-color: var(--input-bg);
+        border: 2px solid transparent;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .auth-card input:focus {
+        outline: none;
+        background-color: #fff;
+        border-color: var(--primary-navy);
+    }
+
+    /* Fixed Divider logic to stop overlap */
+    .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 25px 0;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        position: relative;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-light); }
+    .divider span { background: white; padding: 0 12px; position: relative; z-index: 1; }
+
+    .btn-auth {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--primary-navy);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-auth:hover { background-color: #141b63; }
+
+    .social-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .btn-social {
+        border: 1px solid var(--border-light);
+        padding: 8px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    /* Custom Blue Checkbox Styling */
+    .custom-checkbox-container {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .custom-checkbox-container input[type="checkbox"] {
+        width: 18px !important;
+        height: 18px !important;
+        cursor: pointer;
+        /* Sharp blue branding */
+        accent-color: var(--primary-navy); 
+        border-radius: 4px;
+        filter: none; /* Ensuring no blur is applied */
+    }
+
+    .custom-checkbox-container label {
+        margin-bottom: 0 !important;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+
+<div class="auth-page">
+    <div class="auth-header">
+        <h1>Create your Basira account</h1>
+        <p>Start tracking competitor insights in minutes</p>
+    </div>
+
+    <div class="auth-card">
+        {% if form.errors or form.non_field_errors %}
+            <div class="notification-banner">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div>Please correct the errors listed below.</div>
             </div>
-        {% endfor %}
-        <button type="submit">Register</button>
-    </form>
+
+            <div class="error-list-container">
+                <ul style="margin: 0; padding-left: 20px;">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group">
+                    <label>Full name</label>
+                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label>Email address</label>
+                    <input type="email" name="email" value="{{ form.email.value|default:'' }}" placeholder="John.Doe@gmail.com" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+                <label>Username</label>
+                <input type="text" name="username" value="{{ form.username.value|default:'' }}" placeholder="JohnDoe" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm password</label>
+                    <input type="password" name="password_confirm" required>
+                </div>
+            </div>
+
+            <div class="custom-checkbox-container">
+                <input type="checkbox" name="terms" id="terms" required>
+                <label for="terms">I agree to the terms and privacy policy</label>
+            </div>
+            
+            <button type="submit" class="btn-auth">Create account</button>
+        </form>
+
+        <div class="divider"><span>Or sign up with</span></div>
+
+        <div class="social-grid">
+            <a href="#" class="btn-social">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="16"> Google
+            </a>
+            <a href="#" class="btn-social">
+                <i class="fa-brands fa-facebook" style="color: #1877F2;"></i> Facebook
+            </a>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -2,6 +2,7 @@ import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+import markdown
 from .models import ResearchRequest
 from .forms import ResearchForm
 from .tasks import run_research_pipeline
@@ -41,7 +42,22 @@ def request_detail(request, pk):
     Shows the AI analysis results and the list of scraped articles.
     """
     req = get_object_or_404(ResearchRequest, pk=pk, user=request.user)
-    return render(request, 'archive_etl/detail.html', {'req': req})
+    
+    # Convert the Markdown text to HTML in the view
+    # 'extra' handles tables and better lists
+    # 'nl2br' handles new lines without needing double spaces
+    if req.thematic_analysis:
+        formatted_analysis = markdown.markdown(
+            req.thematic_analysis, 
+            extensions=['extra', 'nl2br']
+        )
+    else:
+        formatted_analysis = "No analysis available yet."
+
+    return render(request, 'archive_etl/detail.html', {
+        'req': req,
+        'formatted_analysis': formatted_analysis
+    })
 
 @login_required
 def export_research_csv(request, pk):

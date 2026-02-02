@@ -1,14 +1,26 @@
 import logging
 from django.conf import settings
-import google.generativeai as genai
+
+# Use the new google.genai client
+try:
+    from google import genai as _genai
+except Exception:
+    _genai = None
 
 logger = logging.getLogger(__name__)
 
-# Configure Gemini
-try:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-except Exception as e:
-    logger.error(f"Gemini API key error: {e}")
+def _init_client():
+    """Initialize Google GenAI client."""
+    if _genai is None:
+        return None
+    api_key = getattr(settings, 'CHATBOT_API_KEY', None)
+    if not api_key:
+        return None
+    try:
+        return _genai.Client(api_key=api_key)
+    except Exception as e:
+        logger.error(f"Failed to initialize GenAI client: {e}")
+        return None
 
 def perform_thematic_analysis(topic, articles):
     """
@@ -17,19 +29,21 @@ def perform_thematic_analysis(topic, articles):
     if not articles:
         return "No articles found to analyze."
 
-    # Prepare a digest of the content (limit text to avoid token limits)
-    # We send the title and the first 300 characters of each article
+    # 1. Initialize the new SDK Client
+    client = _init_client()
+    if not client:
+        return "AI Client initialization failed. Check your API key."
+
+    # 2. Prepare digest
     content_digest = "\n\n".join([
         f"Title: {a.title}\nExcerpt: {a.clean_text[:300]}..." 
-        for a in articles[:30] # Analyze top 30 articles to save tokens/time
+        for a in articles[:30] 
     ])
 
     prompt = f"""
     You are an expert academic researcher specializing in Media Analysis.
-    
     I have collected news articles related to the topic: "{topic}".
     Here is a digest of the content:
-    
     {content_digest}
     
     Please perform a Thematic Analysis on this data. Provide the output in Markdown:
@@ -40,9 +54,19 @@ def perform_thematic_analysis(topic, articles):
     """
 
     try:
-        model = genai.GenerativeModel(model_name="gemini-2.5-flash-preview-09-2025")
-        response = model.generate_content(prompt)
-        return response.text
+        # 3. Use the new SDK syntax: client.models.generate_content
+        response = client.models.generate_content(
+            model="gemini-2.5-flash", # Updated to the latest stable model
+            contents=prompt,
+            config={
+                'temperature': 0.3, # Lower temperature for analytical consistency
+            }
+        )
+        
+        if response.text:
+            return response.text
+        return "AI returned an empty analysis."
+
     except Exception as e:
         logger.error(f"AI Analysis failed: {e}")
         return f"Error generating analysis: {e}"

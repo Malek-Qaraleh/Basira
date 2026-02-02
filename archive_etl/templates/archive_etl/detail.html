@@ -1,38 +1,209 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <a href="{% url 'research_dashboard' %}" class="btn btn-outline-secondary mb-3">&larr; Back to Dashboard</a>
-    
-    <h2>Results: {{ req.topic }}</h2>
-    
-    <!-- AI Analysis Section -->
-    <div class="card mb-4">
-        <div class="card-header bg-light">
-            <h5>🧠 AI Thematic Analysis</h5>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-navy: #1a237e;
+        --border-light: #E5E7EB;
+        --text-muted: #64748b;
+        --bg-light: #f8fafc;
+    }
+
+    /* Adjusted padding for 100% zoom */
+    .research-page-container {
+        padding: 40px 5%;
+        background-color: var(--bg-light);
+        min-height: 100vh;
+    }
+
+    /* Back Link scaled down */
+    .back-nav {
+        margin-bottom: 25px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem; /* Reduced from 1.1rem */
+        transition: color 0.2s;
+    }
+
+    .back-nav:hover { color: var(--primary-navy); }
+
+    .header-area {
+        margin-bottom: 35px;
+    }
+
+    .header-area h1 {
+        font-size: 2.2rem; /* Reduced from 3rem */
+        font-weight: 900;
+        color: #1e293b;
+        letter-spacing: -0.5px;
+    }
+
+    .topic-badge {
+        background-color: #e8eaf6;
+        color: var(--primary-navy);
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 0.85rem; /* Reduced from 1rem */
+        font-weight: 800;
+        display: inline-block;
+        margin-top: 10px;
+        text-transform: uppercase;
+    }
+
+    /* Analysis Card scaled down */
+    .analysis-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid var(--border-light);
+        padding: 30px; /* Reduced from 45px */
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+    }
+
+    .card-label {
+        font-size: 1rem; /* Reduced from 1.2rem */
+        font-weight: 800;
+        color: var(--primary-navy);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .analysis-text-styled {
+        font-size: 1rem; /* Reduced from 1.25rem */
+        line-height: 1.7;
+        color: #334155;
+    }
+
+    /* Source List Card scaled down */
+    .sources-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid var(--border-light);
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+    }
+ 
+    .sources-header {
+        background: #fcfcfd;
+        padding: 20px 30px; /* Reduced padding */
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .sources-header h2 {
+        font-size: 1.2rem; /* Reduced from 1.5rem */
+        font-weight: 900;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .btn-download-dataset {
+        background-color: var(--primary-navy);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s;
+    }
+
+    .btn-download-dataset:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .article-item {
+        padding: 20px 30px; /* Reduced padding */
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+
+    .article-item:hover { background-color: #fafbfc; }
+
+    .article-link {
+        font-size: 1rem; /* Reduced from 1.2rem */
+        font-weight: 700;
+        color: #2563eb;
+        text-decoration: none;
+    }
+
+    .article-link:hover { text-decoration: underline; }
+
+    .scrape-meta {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+</style>
+
+<div class="research-page-container">
+    <a href="{% url 'research_dashboard' %}" class="back-nav">
+        <i class="fa-solid fa-arrow-left"></i> Back to Research Dashboard
+    </a>
+
+    <div class="header-area">
+        <h1>Research Results</h1>
+        <span class="topic-badge">Topic: {{ req.topic }}</span>
+    </div>
+
+    <div class="analysis-card">
+        <div class="card-label">
+            <i class="fa-solid fa-brain"></i> AI Thematic Analysis
         </div>
-        <div class="card-body">
-            {% if req.thematic_analysis %}
-                {{ req.thematic_analysis|linebreaks }}
+        <div class="analysis-text-styled">
+            {% if formatted_analysis %}
+                {{ formatted_analysis|safe }}
             {% else %}
-                <p class="text-muted">Analysis pending or failed...</p>
+                <div style="text-align: center; padding: 30px; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin fa-xl mb-3"></i>
+                    <p>Analysis is currently being generated. Please refresh in a moment...</p>
+                </div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Articles List -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Source Articles ({{ req.articles.count }})</h4>
-        <a href="{% url 'export_research_csv' req.pk %}" class="btn btn-success">📥 Download Dataset (CSV)</a>
-    </div>
+    <div class="sources-card">
+        <div class="sources-header">
+            <h2>Source Articles ({{ req.articles.count }})</h2>
+            <a href="{% url 'export_research_csv' req.pk %}" class="btn-download-dataset">
+                <i class="fa-solid fa-file-csv"></i> Download Dataset
+            </a>
+        </div>
 
-    <ul class="list-group">
-        {% for article in req.articles.all %}
-        <li class="list-group-item">
-            <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
-            <small class="text-muted ms-2">({{ article.scraped_at|date:"H:i" }})</small>
-        </li>
-        {% endfor %}
-    </ul>
+        <div class="articles-list">
+            {% for article in req.articles.all %}
+            <div class="article-item">
+                <a href="{{ article.url }}" target="_blank" class="article-link">
+                    <i class="fa-solid fa-link me-2"></i> {{ article.title }}
+                </a>
+                <div class="scrape-meta">
+                    <i class="fa-regular fa-clock me-1"></i> Extracted at {{ article.scraped_at|date:"H:i" }}
+                </div>
+            </div>
+            {% empty %}
+            <div style="padding: 60px; text-align: center; color: var(--text-muted);">
+                <p>No source articles found for this topic.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 {% endblock %}

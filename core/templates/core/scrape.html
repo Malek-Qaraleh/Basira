@@ -1,41 +1,315 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Start AI Scrape (Dumyah / Matalan)</h2>
-<p class="hint">This form uses the AI agent. Just provide a category URL.</p>
+<style>
+    :root {
+        --primary-navy: #1a237e;
+        --checkbox-navy: #1C398E; 
+        --border-light: #E5E7EB;
+        --text-muted: #64748b;
+        --bg-tip: #eff6ff;
+        --text-tip: #1e40af;
+        --error-red: #ef4444;
+    }
 
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
+    .scrape-page-container {
+        padding: 60px 8%;
+        background-color: #FFFFFF;
+        min-height: 100vh;
+    }
 
-<form method="post">{% csrf_token %}
+    .page-header {
+        margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 12px;
+    }
+
+    .page-header p {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+    }
+
+    /* Main Form Card */
+    .scrape-card {
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .scrape-card h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 25px;
+        color: #1e293b;
+    }
+
+    .input-row-main {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .url-input-container {
+        flex-grow: 1;
+    }
+
+    .form-control-custom {
+        width: 100%;
+        padding: 12px 20px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+
+    .form-control-custom:focus {
+        outline: none;
+        border-color: var(--primary-navy);
+    }
+
+    .btn-start-scrape {
+        background-color: var(--primary-navy);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        transition: background 0.2s;
+        cursor: pointer;
+    }
+
+    .btn-start-scrape:hover {
+        background-color: #151b60;
+    }
+
+    /* Checkbox Group */
+    .checkbox-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        color: #334155;
+        cursor: pointer;
+    }
+
+    .checkbox-item input {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--checkbox-navy); 
+    }
+
+    /* Max Items/Pages Row */
+    .limits-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 35px;
+    }
+
+    .limit-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #1e293b;
+    }
+
+    /* Tip Box */
+    .tip-box {
+        background-color: var(--bg-tip);
+        border-radius: 8px;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-tip);
+        font-size: 0.95rem;
+        border: 1px solid #dbeafe;
+    }
+
+    /* Snackbar Styling */
+    #snackbar {
+    visibility: hidden;
+    min-width: 500px;
+    background-color: #334155;
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    padding: 20px 30px;
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
     
-    <div id="ai_agent_fields">
-        <label for="id_category_url">Category URL</label>
-        <input name="category_url" id="id_category_url" placeholder="https://www.temu.com/..." required>
-        
-        <label>Fields to Extract</label>
-        <div class="checkbox-group">
-            <label><input type="checkbox" name="fields" value="title" checked> title</label>
-            <label><input type="checkbox" name="fields" value="price" checked> price</label>
-            <label><input type="checkbox" name="fields" value="image_url" checked> image_url</label>
-            <label><input type="checkbox" name="fields" value="product_url" checked> product_url</label>
-            <label><input type="checkbox" name="fields" value="currency" checked> currency</label>
-            <label><input type="checkbox" name="fields" value="rating" checked> rating</label>
-        </div>
+    /* Font Size Updates */
+    font-size: 1.8rem; /* This makes the text significantly larger */
+    font-weight: 600;
+    
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Increased gap to match the larger scale */
+}
+
+#snackbar i {
+    color: #ffca28;
+    font-size: 2.8rem; /* Slightly increased to stay larger than the text */
+}
+
+#snackbar.show {
+    visibility: visible;
+    /* Fixed the animation property - eased the transition */
+    animation: fadein 0.5s ease-in-out, fadeout 0.5s 2.5s ease-in-out;
+}
+
+    @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+    @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+    .error-msg {
+        color: var(--error-red);
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+</style>
+
+<div class="scrape-page-container">
+    <div class="page-header">
+        <h1>Scrape</h1>
+        <p>Configure and launch automated extraction jobs for any e-commerce target.</p>
     </div>
 
-    <div class="form-row">
-        <div class="form-group form-group-small">
-            <label for="id_max_items">Max items (0 = all)</label>
-            <input name="max_items" id="id_max_items" type="number" min="0" value="{{ defaults.max_items|default:50 }}">
-        </div>
+    <div class="scrape-card">
+        <h3>New Scraping Job</h3>
         
-        <div class="form-group form-group-small">
-            <label for="id_max_pages">Max pages (0 = all)</label>
-            <input name="max_pages" id="id_max_pages" type="number" min="0" value="0">
-        </div>
-    </div>
+        {% if error %}<p class="error-msg">{{ error }}</p>{% endif %}
 
-    <button type="submit">Scrape</button>
-</form>
+        <form method="post" id="scrapeForm">
+            {% csrf_token %}
+            
+            <div class="input-row-main">
+                <div class="url-input-container">
+                    <input type="url" name="category_url" id="id_category_url" 
+                           class="form-control-custom" 
+                           placeholder="https://www.dumyah.com/en" required>
+                </div>
+                <button type="submit" class="btn-start-scrape">
+                    <i class="bi bi-play-fill"></i> Start Scraping
+                </button>
+            </div>
+
+            <div class="checkbox-container">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fields" value="title" checked> Extract Title
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fields" value="price" checked> Extract Price
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fields" value="currency" checked> Extract Currency
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fields" value="image_url" checked> Extract Image
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fields" value="product_url" checked> Extract Product
+                </label>
+                <input type="hidden" name="fields" value="rating">
+            </div>
+
+            <div class="limits-row">
+                <div class="limit-group">
+                    <label for="id_max_items">Max Products*</label>
+                    <input type="number" name="max_items" id="id_max_items" 
+                           class="form-control-custom" placeholder="e.g., 500" 
+                           min="5" max="500" value="{{ defaults.max_items|default:50 }}" required>
+                </div>
+                <div class="limit-group">
+                    <label for="id_max_pages">Max Pages*</label>
+                    <input type="number" name="max_pages" id="id_max_pages" 
+                           class="form-control-custom" placeholder="e.g., 100" 
+                           min="1" max="50" value="10" required>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <i class="bi bi-info-circle"></i>
+                <div>
+                    <strong>Tip:</strong> For best results, provide direct product page URLs. Our system automatically handles pagination.
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="snackbar">
+    <i class="bi bi-exclamation-triangle-fill"></i> 
+    <span id="snackbar-text">Maximum limit reached!</span>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const scrapeForm = document.getElementById('scrapeForm');
+    const itemsInput = document.getElementById('id_max_items');
+    const pagesInput = document.getElementById('id_max_pages');
+    const snackbar = document.getElementById('snackbar');
+    const snackbarText = document.getElementById('snackbar-text');
+
+    function showSnackbar(message) {
+        snackbarText.textContent = message;
+        snackbar.className = "show";
+        setTimeout(() => { 
+            snackbar.className = snackbar.className.replace("show", ""); 
+        }, 3000);
+    }
+
+    function validateLimits(input, label) {
+        // We use 'change' so it only triggers when the user finishes entering the number
+        input.addEventListener('change', function() {
+            const max = parseInt(this.getAttribute('max'));
+            const min = parseInt(this.getAttribute('min'));
+            let val = parseInt(this.value);
+
+            if (val > max) {
+                this.value = max;
+                showSnackbar(` Maximum ${label} is ${max}`);
+            } else if (val < min || isNaN(val)) {
+                this.value = min;
+                showSnackbar(` Minimum ${label} is ${min}`);
+            }
+        });
+    }
+
+    validateLimits(itemsInput, "Products");
+    validateLimits(pagesInput, "Pages");
+
+    // Existing loading state logic
+    scrapeForm.addEventListener('submit', function() {
+        const btn = document.querySelector('.btn-start-scrape');
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+        btn.disabled = true;
+    });
+});
+</script>
 
 {% endblock %}

@@ -1,44 +1,349 @@
 {% extends "base.html" %}
+{% load tz %} {# Required to handle local time conversion #}
 {% block content %}
-<h2>Your Scrape History</h2>
-<table>
-    <thead>
-        <tr>
-            <th>When</th>
-            <th>Query (URL)</th>
-            <th>Items</th>
-            <th>Status</th>
-            <th>Dashboard</th>
-            <th>Export</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for batch in batches %}
-            <tr>
-                <td>{{ batch.created_at|date:"Y-m-d H:i" }}</td>
-                <td title="{{ batch.query }}">{{ batch.query|truncatechars:50 }}</td>
-                <td>{{ batch.count }}</td>
-                <td>
-                    <!-- Check status of the first job in the batch -->
-                    {% with job=batch.scrapejob_set.first %}
-                        <span class="status-{{ job.status }}">{{ job.get_status_display }}</span>
-                        {% if job.status == 'error' %}
-                            <pre class="error">{{ job.note|truncatechars:100 }}</pre>
+
+<style>
+    :root {
+        --primary-navy: #1a237e;
+        --border-light: #E5E7EB;
+        --text-muted: #64748b;
+        --success-bg: #dcfce7;
+        --success-text: #166534;
+        --error-bg: #fee2e2;
+        --error-text: #991b1b;
+        --pending-bg: #ffedd5;
+        --pending-text: #9a3412;
+        --running-bg: #dbeafe;
+        --running-text: #1e40af;
+    }
+
+    .history-container {
+        padding: 40px 5%; 
+        background-color: #f8fafc;
+        min-height: 100vh;
+    }
+
+    .page-title-area { margin-bottom: 30px; } 
+    .page-title-area h1 { font-size: 2.2rem; font-weight: 900; color: #1e293b; letter-spacing: -0.5px; } 
+    .page-title-area p { font-size: 1.1rem; color: var(--text-muted); font-weight: 500; } 
+
+    .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px; 
+        gap: 20px;
+    }
+
+    .search-wrapper {
+        display: flex;
+        gap: 15px;
+        flex-grow: 1;
+        max-width: 650px; 
+        align-items: center;
+    }
+
+    .search-input {
+        flex-grow: 1;
+        padding: 12px 20px; 
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        font-size: 1rem; 
+        font-weight: 600;
+        background: white;
+    }
+
+    .dropdown-check-wrapper {
+        position: relative;
+        min-width: 200px; 
+    }
+
+    .dropdown-check-btn {
+        width: 100%;
+        padding: 12px 20px; 
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        font-size: 1rem; 
+        font-weight: 700;
+        background: white;
+        text-align: left;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        color: #1e293b;
+    }
+
+    .dropdown-check-content {
+        display: none;
+        position: absolute;
+        top: 105%;
+        left: 0;
+        width: 100%;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 10px;
+        z-index: 100;
+        border: 1px solid var(--border-light);
+    }
+
+    .dropdown-check-content.show { display: block; }
+
+    .check-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        font-size: 0.95rem; 
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 6px;
+    }
+
+    .check-item:hover { background: #f8fafc; }
+
+    .check-item input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary-navy);
+    }
+
+    .btn-clear-filters {
+        padding: 10px;
+        border: none;
+        background: transparent;
+        color: #ef4444;
+        font-weight: 800;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: none;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 16px; 
+        border: 1px solid var(--border-light);
+        overflow: hidden;
+        margin-bottom: 40px; 
+        box-shadow: 0 15px 50px rgba(0,0,0,0.05);
+    }
+
+    .history-table { width: 100%; border-collapse: collapse; }
+    .history-table th {
+        background: #fcfcfd;
+        padding: 16px 24px; 
+        text-align: left;
+        font-size: 0.85rem; 
+        font-weight: 800;
+        color: #1e293b;
+        border-bottom: 2px solid #f1f5f9;
+        text-transform: uppercase;
+    }
+
+    .history-table td { padding: 18px 24px; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+
+    .query-link { color: #2563eb; font-weight: 700; text-decoration: none; }
+
+    .status-badge {
+        padding: 6px 16px; 
+        border-radius: 60px;
+        font-size: 0.85rem; 
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .status-done { background: var(--success-bg); color: var(--success-text); }
+    .status-error { background: var(--error-bg); color: var(--error-text); }
+    .status-pending { background: var(--pending-bg); color: var(--pending-text); }
+    .status-running { background: var(--running-bg); color: var(--running-text); }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; } 
+    .summary-card { 
+        background: white; 
+        padding: 25px; 
+        border-radius: 16px; 
+        border: 1px solid var(--border-light); 
+        text-align: left; 
+    }
+    .summary-card span { display: block; font-size: 0.95rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; }
+    .summary-card strong { font-size: 2rem; font-weight: 900; display: block; line-height: 1; } 
+
+    .action-icons { display: flex; gap: 15px; font-size: 1.2rem; align-items: center; } 
+</style>
+
+<div class="history-container">
+    <div class="page-title-area">
+        <h1>Scraping History</h1>
+        <p>Review and manage all your web scraping jobs.</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="search-wrapper">
+            <input type="text" id="jobSearch" class="search-input" placeholder="Search by URL...">
+            <div class="dropdown-check-wrapper">
+                <div id="filterBtn" class="dropdown-check-btn">
+                    <span id="filterLabel">Filter</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none">
+                        <path d="M8.33336 16.6667C8.33329 16.8215 8.37637 16.9733 8.45777 17.1051C8.53917 17.2368 8.65566 17.3433 8.79419 17.4125L10.4609 18.2458C10.5879 18.3093 10.7291 18.3393 10.8711 18.3329C11.013 18.3264 11.1509 18.2838 11.2717 18.2091C11.3925 18.1344 11.4922 18.03 11.5614 17.9059C11.6305 17.7818 11.6668 17.6421 11.6667 17.5V11.6667C11.6669 11.2537 11.8204 10.8554 12.0975 10.5492L18.1167 3.89167C18.2246 3.77213 18.2955 3.6239 18.3209 3.4649C18.3464 3.3059 18.3252 3.14294 18.2599 2.99573C18.1947 2.84851 18.0882 2.72335 17.9534 2.63538C17.8185 2.5474 17.661 2.50038 17.5 2.5H2.50003C2.33886 2.50006 2.18118 2.54685 2.04607 2.6347C1.91096 2.72255 1.80422 2.84769 1.73878 2.99497C1.67334 3.14225 1.65201 3.30534 1.67738 3.46449C1.70274 3.62364 1.77371 3.77203 1.88169 3.89167L7.90252 10.5492C8.17964 10.8554 8.33317 11.2537 8.33336 11.6667V16.6667Z" stroke="#99A1AF" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div id="filterContent" class="dropdown-check-content">
+                    <label class="check-item"><input type="checkbox" value="done"> Done</label>
+                    <label class="check-item"><input type="checkbox" value="error"> Error</label>
+                    <label class="check-item"><input type="checkbox" value="running"> Running</label>
+                    <label class="check-item"><input type="checkbox" value="pending"> Pending</label>
+                </div>
+            </div>
+            <button id="clearFilters" class="btn-clear-filters">Clear All</button>
+        </div>
+        <div style="text-align: right; font-weight: 800; color: var(--text-muted); font-size: 1rem;">
+            Total: <span id="totalDisplay">{{ batches|length }}</span><br>
+            Filtered: <span id="filteredDisplay">{{ batches|length }}</span>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Query (URL)</th>
+                    <th>Products</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in batches %}
+                {% with job=batch.scrapejob_set.first %}
+                <tr class="job-row" data-status="{{ job.status|lower }}" data-url="{{ batch.query|lower }}">
+                    <td>
+                        <div style="font-weight: 800;">{{ batch.created_at|localtime|date:"Y-m-d" }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;"><i class="bi bi-clock"></i> {{ batch.created_at|localtime|date:"H:i:s" }}</div>
+                    </td>
+                    <td>
+                        <a href="{{ batch.query }}" target="_blank" class="query-link">{{ batch.query|truncatechars:45 }}</a>
+                    </td>
+                    <td style="font-weight: 800;" class="row-count">{% if batch.count %}{{ batch.count }}{% else %}0{% endif %}</td>
+                    
+                    <td style="color: var(--text-muted); font-weight: 700;">
+                        {% if job.status == 'RUNNING' %}
+                            <span class="live-duration" data-start="{{ batch.created_at|date:'c' }}">0m 0s</span>
+                        {% else %}
+                            {% if batch.duration %}
+                                {{ batch.duration|floatformat:1 }}s
+                            {% else %}
+                                --
+                            {% endif %}
                         {% endif %}
-                    {% endwith %}
-                </td>
-                <td><a href="{% url 'dashboard' batch.id %}">Open</a></td>
-                <td>
-                    <a href="{% url 'export_csv' batch.id %}">CSV</a> ·
-                    <a href="{% url 'export_json' batch.id %}">JSON</a>
-                </td>
-            </tr>
-            {% if batch.insight %}
-            <tr class="insight-row">
-                <td colspan="6"><pre>{{ batch.insight.summary }}</pre></td>
-            </tr>
-            {% endif %}
-        {% endfor %}
-    </tbody>
-</table>
+                    </td> 
+
+                    <td>
+                        <span class="status-badge status-{{ job.status|lower }}">
+                            {% if job.status == 'RUNNING' %}<span class="spinner-grow spinner-grow-sm"></span>{% endif %}
+                            {{ job.status|title }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-icons">
+                            <a href="{% url 'dashboard' batch.id %}" class="text-primary"><i class="bi bi-eye-fill"></i></a>
+                            <a href="{% url 'export_csv' batch.id %}" class="text-secondary"><i class="bi bi-download"></i></a>
+                            <a href="{% url 'export_json' batch.id %}" style="font-size: 0.85rem; font-weight: 900; text-decoration: none; color: #94a3b8;">JSON</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card"><span>Successful Jobs</span><strong style="color: #10b981;" id="doneCount">0</strong></div>
+        <div class="summary-card"><span>Failed Jobs</span><strong style="color: #ef4444;" id="errorCount">0</strong></div>
+        <div class="summary-card"><span>Total Products</span><strong style="color: #3b82f6;" id="totalProductsDisplay">0</strong></div>
+        <div class="summary-card"><span>Active Jobs</span><strong style="color: #f59e0b;" id="runningCount">0</strong></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('jobSearch');
+    const filterBtn = document.getElementById('filterBtn');
+    const filterContent = document.getElementById('filterContent');
+    const filterLabel = document.getElementById('filterLabel');
+    const clearBtn = document.getElementById('clearFilters');
+    const checkboxes = document.querySelectorAll('.check-item input');
+    const rows = document.querySelectorAll('.job-row');
+
+    filterBtn.onclick = () => filterContent.classList.toggle('show');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedStatuses = Array.from(checkboxes).filter(i => i.checked).map(i => i.value);
+        let visibleCount = 0;
+
+        if (searchTerm !== '' || selectedStatuses.length > 0) clearBtn.style.display = 'block';
+        else clearBtn.style.display = 'none';
+
+        filterLabel.textContent = selectedStatuses.length > 0 ? selectedStatuses.join(', ').toUpperCase() : 'Filter';
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            const url = row.getAttribute('data-url');
+            const matchesSearch = url.includes(searchTerm);
+            const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(status);
+            
+            if (matchesSearch && matchesStatus) { row.style.display = ''; visibleCount++; }
+            else row.style.display = 'none';
+        });
+        document.getElementById('filteredDisplay').textContent = visibleCount;
+    }
+
+    checkboxes.forEach(c => c.onchange = filterTable);
+    searchInput.oninput = filterTable;
+
+    clearBtn.onclick = () => {
+        searchInput.value = '';
+        checkboxes.forEach(c => c.checked = false);
+        filterTable();
+    };
+
+    function updateStats() {
+        let stats = { done: 0, error: 0, running: 0, pending: 0, products: 0 };
+        rows.forEach(row => {
+            const s = row.getAttribute('data-status');
+            if (stats[s] !== undefined) stats[s]++;
+            stats.products += parseInt(row.querySelector('.row-count').textContent) || 0;
+        });
+        document.getElementById('doneCount').textContent = stats.done;
+        document.getElementById('errorCount').textContent = stats.error;
+        document.getElementById('runningCount').textContent = stats.running;
+        document.getElementById('totalProductsDisplay').textContent = stats.products.toLocaleString();
+    }
+    updateStats();
+
+    function updateRunningTimers() {
+        const now = new Date();
+        document.querySelectorAll('.live-duration').forEach(el => {
+            const start = new Date(el.getAttribute('data-start'));
+            const diff = Math.floor((now - start) / 1000); 
+
+            if (diff < 0) return;
+
+            const mins = Math.floor(diff / 60);
+            const secs = diff % 60;
+            
+            el.textContent = `${mins}m ${secs}s`;
+        });
+    }
+
+    updateRunningTimers();
+    setInterval(updateRunningTimers, 1000);
+});
+</script>
+
 {% endblock %}

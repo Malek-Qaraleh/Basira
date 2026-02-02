@@ -1,165 +1,322 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<!-- Main Container: Added 'flex-row' and 'overflow-hidden' to enforce side-by-side layout -->
-<div class="container-fluid p-0 d-flex flex-row" style="height: calc(100vh - 60px); overflow: hidden;"> 
-    
-    <!-- SIDEBAR: History -->
-    <!-- Added 'flex-shrink-0' to prevent it from being squished or wrapped -->
-    <div class="d-flex flex-column bg-light border-end flex-shrink-0" style="width: 280px; height: 100%; overflow-y: auto;">
-        
-        <!-- New Chat Button -->
-        <div class="p-3 border-bottom bg-white sticky-top">
-            <a href="{% url 'create_session' %}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
-                <span>+</span> New Chat
-            </a>
-        </div>
-
-        <!-- History List -->
-        <div class="list-group list-group-flush">
-            {% for session in sessions %}
-                <a href="{% url 'chat_room' session.id %}" 
-                   class="list-group-item list-group-item-action py-3 lh-sm {% if session.id == current_session.id %}active text-white{% else %}bg-light text-dark{% endif %}" 
-                   style="border-left: 0; border-right: 0;">
-                    <div class="d-flex w-100 align-items-center justify-content-between">
-                        <strong class="mb-1 text-truncate" style="max-width: 180px;">
-                            {{ session.title }}
-                        </strong>
-                    </div>
-                    <div class="col-10 mb-1 small opacity-75">
-                        {{ session.created_at|date:"M d" }}
-                    </div>
-                </a>
-            {% empty %}
-                <div class="text-center p-4 text-muted small">No history yet.</div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- MAIN CHAT AREA -->
-    <!-- Added 'min-width: 0' to prevent overflow issues -->
-    <div class="d-flex flex-column flex-grow-1" style="height: 100%; min-width: 0; position: relative;">
-        
-        <!-- Chat Header -->
-        <div class="border-bottom p-3 bg-white d-flex align-items-center shadow-sm z-1">
-            <span class="fs-4 me-2">🤖</span>
-            <h5 class="mb-0 text-truncate">{{ current_session.title }}</h5>
-        </div>
-
-        <!-- Messages Log -->
-        <div class="flex-grow-1 overflow-auto p-4" id="chat-log" style="background-color: #ffffff;">
-            {% if not current_session.messages.exists %}
-                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
-                    <h3>👋 Need Advice?</h3>
-                    <p>Ask Basira AI about marketing strategies or data analysis.</p>
-                </div>
-            {% endif %}
-
-            {% for msg in current_session.messages.all %}
-                <div class="d-flex w-100 mb-3 {% if msg.role == 'user' %}justify-content-end{% else %}justify-content-start{% endif %}">
-                    <div class="d-flex flex-column {% if msg.role == 'user' %}align-items-end{% else %}align-items-start{% endif %}" style="max-width: 70%;">
-                        <div class="p-3 rounded-3 shadow-sm 
-                            {% if msg.role == 'user' %}
-                                bg-primary text-white rounded-bottom-right-0
-                            {% else %}
-                                bg-light text-dark border rounded-bottom-left-0
-                            {% endif %}">
-                            {{ msg.content|linebreaksbr }}
-                        </div>
-                        <small class="text-muted mt-1" style="font-size: 0.7rem;">
-                            {% if msg.role == 'user' %}You{% else %}Basira AI{% endif %}
-                        </small>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Input Area -->
-        <div class="p-3 bg-white border-top">
-            <div class="input-group input-group-lg">
-                <input type="text" id="chat-input" class="form-control border bg-light" placeholder="Type your question..." autocomplete="off">
-                <button class="btn btn-primary px-4" onclick="sendMessage()">
-                    <i class="bi bi-send"></i> Send
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
-    .rounded-bottom-right-0 { border-bottom-right-radius: 0 !important; }
-    .rounded-bottom-left-0 { border-bottom-left-radius: 0 !important; }
-    
-    .list-group-item.active {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
+    :root {
+        --primary-navy: #1a237e;
+        --accent-blue: #1C398E;
+        --border-light: #E5E7EB;
+        --text-dark: #1e293b;
+        --text-muted: #64748b;
+        --sidebar-bg: #f8fafc;
     }
-    /* Improve scrollbars */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+    /* Main Layout - conceptual scaling for 100% zoom */
+    .chat-page-wrapper {
+        display: flex;
+        height: calc(100vh - 70px); /* Adjusted for 70px navbar */
+        background-color: #ffffff;
+        color: var(--text-dark);
+        font-family: 'Inter', sans-serif;
+        overflow: hidden;
+    }
+
+    /* Sidebars scaled down */
+    #sidebar { 
+        width: 260px; /* Reduced from 300px */
+        background-color: var(--sidebar-bg); 
+        display: flex; 
+        flex-direction: column; 
+        padding: 20px; 
+        border-right: 1px solid var(--border-light); 
+        flex-shrink: 0; 
+    }
+
+    #doc-sidebar { 
+        width: 280px; /* Reduced from 320px */
+        background: var(--sidebar-bg); 
+        border-left: 1px solid var(--border-light); 
+        padding: 20px; 
+        display: flex; 
+        flex-direction: column; 
+    }
+    
+    .new-chat-btn { 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+        padding: 12px; 
+        border: 2px solid var(--accent-blue); 
+        border-radius: 10px; 
+        color: var(--accent-blue); 
+        text-decoration: none; 
+        font-size: 0.95rem; 
+        background: #fff; 
+        margin-bottom: 20px; 
+        justify-content: center; 
+        transition: 0.2s; 
+        font-weight: 800; 
+        cursor: pointer; 
+    }
+    .new-chat-btn:hover { background: var(--accent-blue); color: white; }
+    
+    .history-list { flex-grow: 1; overflow-y: auto; }
+    .history-item-container { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        padding: 10px 14px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        color: var(--text-muted); 
+        margin-bottom: 6px; 
+        transition: 0.2s;
+    }
+    .history-item-container:hover { background: #eff6ff; }
+    .history-item-container.active { background: #e8eaf6; color: var(--primary-navy); font-weight: 700; }
+    .history-item { text-decoration: none; color: inherit; font-size: 0.9rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+    /* Chat Area scaled for 100% zoom */
+    #main-chat { flex: 1; display: flex; flex-direction: column; position: relative; background: #fff; }
+    #chat-window { flex: 1; overflow-y: auto; padding: 40px 25px 140px; scroll-behavior: smooth; }
+    .chat-container-wrapper { max-width: 750px; /* Reduced from 850px */ margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    .message-row { display: flex; width: 100%; gap: 15px; }
+    .message-row.user { flex-direction: row-reverse; }
+    
+    .avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .avatar.user-avatar { background: var(--primary-navy); color: white; }
+    .avatar.bot-avatar { background: #f1f5f9; color: var(--accent-blue); border: 1px solid var(--border-light); }
+    
+    .message-content { 
+        max-width: 85%; 
+        padding: 14px 20px; 
+        border-radius: 16px; 
+        line-height: 1.6; 
+        font-size: 0.95rem; /* Standardized text size */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02); 
+    }
+    .user .message-content { background: var(--primary-navy); color: white; border-top-right-radius: 4px; font-weight: 500; }
+    .model .message-content { background: #f8fafc; color: var(--text-dark); border-top-left-radius: 4px; border: 1px solid var(--border-light); }
+
+    /* Input Area scaled for 100% zoom */
+    .input-container { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; background: linear-gradient(0deg, #fff 70%, transparent 100%); }
+    #chat-form { 
+        display: flex; 
+        background: white; 
+        border: 2px solid var(--border-light); 
+        border-radius: 14px; 
+        padding: 8px 16px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.06); 
+        align-items: center; 
+        gap: 12px; 
+        max-width: 750px; 
+        margin: 0 auto; 
+        transition: border-color 0.2s;
+    }
+    #chat-form:focus-within { border-color: var(--accent-blue); }
+    #user-input { flex: 1; border: none; outline: none; padding: 8px; font-size: 1rem; font-weight: 500; }
+    
+    .icon-btn { color: var(--text-muted); cursor: pointer; background: none; border: none; padding: 6px; transition: 0.2s; display: flex; align-items: center; }
+    .icon-btn:hover { color: var(--accent-blue); transform: scale(1.1); }
+    
+    .doc-item { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        padding: 12px; 
+        background: white; 
+        border: 1px solid var(--border-light); 
+        border-radius: 10px; 
+        margin-bottom: 10px; 
+        font-size: 0.85rem; 
+        font-weight: 600;
+    }
+
+    h3 { font-size: 1rem; font-weight: 800; color: var(--primary-navy); }
 </style>
+
+<div class="chat-page-wrapper">
+    <aside id="sidebar">
+        <a href="{% url 'chat_home' %}" class="new-chat-btn">
+            <span class="material-symbols-outlined">add_circle</span> New conversation
+        </a>
+        <div class="history-list">
+            {% for session in sessions %}
+            <div class="history-item-container {% if current_session.id == session.id %}active{% endif %}">
+                <a href="{% url 'chat_interface_detail' session.id %}" class="history-item">{{ session.title }}</a>
+                <span class="material-symbols-outlined icon-btn" style="font-size:18px;" onclick="deleteSession('{{ session.id }}')">delete</span>
+            </div>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <main id="main-chat">
+        <div id="chat-window">
+            <div class="chat-container-wrapper" id="chat-container">
+                {% if not chat_log %}
+                    <div style="text-align:center; margin-top:15vh; color:var(--text-muted);">
+                        <span class="material-symbols-outlined" style="font-size: 48px; opacity: 0.2; color: var(--primary-navy);">smart_toy</span>
+                        <h2 style="font-weight: 900; margin-top: 15px; color: var(--text-dark); font-size: 1.5rem;">Strategic Intelligence Assistant</h2>
+                        <p style="font-size: 1rem; font-weight: 500;">Upload your research or ask about market trends.</p>
+                    </div>
+                {% endif %}
+                
+                {% for msg in chat_log %}
+                <div class="message-row {{ msg.role }}">
+                    <div class="avatar {% if msg.role == 'user' %}user-avatar{% else %}bot-avatar{% endif %}">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">{% if msg.role == 'user' %}person{% else %}rocket_launch{% endif %}</span>
+                    </div>
+                    <div class="message-content">
+                        {% if msg.role == 'model' %}{{ msg.content|safe }}{% else %}{{ msg.content }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div id="loading-row" class="message-row model" style="display:none;">
+                    <div class="avatar bot-avatar"><span class="material-symbols-outlined" style="font-size: 20px;">sync</span></div>
+                    <div class="message-content" style="font-style: italic; font-weight: 600;">Basira AI is synthesizing context...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <form id="chat-form">
+                {% csrf_token %}
+                <input type="hidden" id="session-id" value="{{ current_session.id|default:'' }}">
+                
+                <button type="button" id="stop-speech-btn" class="icon-btn" style="display:none;">
+                    <span class="material-symbols-outlined" style="color:#ef4444; font-size: 28px;">stop_circle</span>
+                </button>
+                
+                <button type="button" id="mic-btn" class="icon-btn" title="Voice Input">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">mic_none</span>
+                </button>
+                <input type="text" id="user-input" placeholder="Message Basira AI..." autofocus autocomplete="off">
+                <button type="submit" class="icon-btn" style="color:var(--accent-blue)">
+                    <span class="material-symbols-outlined" style="font-size: 28px;">arrow_circle_up</span>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <aside id="doc-sidebar">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3>Upload Files</h3>
+            <span class="material-symbols-outlined icon-btn" style="color:var(--accent-blue); font-size: 24px;" onclick="document.getElementById('doc-file').click()">add_box</span>
+        </div>
+        <input type="file" id="doc-file" accept=".pdf" style="display:none;">
+        <div id="doc-list">
+            {% for doc in documents %}
+            <div class="doc-item">
+                <span class="doc-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">{{ doc.file_name }}</span>
+                <span class="material-symbols-outlined" style="cursor:pointer; color:#ef4444; font-size:18px;" onclick="deleteDoc('{{ doc.id }}')">cancel</span>
+            </div>
+            {% endfor %}
+        </div>
+    </aside>
+</div>
 
 <script>
     const sessionId = "{{ current_session.id }}";
-    const chatLog = document.getElementById('chat-log');
-    const chatInput = document.getElementById('chat-input');
+    const chatWindow = document.getElementById('chat-window');
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const container = document.getElementById('chat-container');
+    const loadingRow = document.getElementById('loading-row');
+    const micBtn = document.getElementById('mic-btn');
+    const stopSpeechBtn = document.getElementById('stop-speech-btn');
+    let wasSpeechInput = false;
 
-    function appendMessage(role, text) {
-        const isUser = role === 'user';
-        const alignClass = isUser ? 'justify-content-end' : 'justify-content-start';
-        const alignColClass = isUser ? 'align-items-end' : 'align-items-start';
-        const bgClass = isUser ? 'bg-primary text-white rounded-bottom-right-0' : 'bg-light text-dark border rounded-bottom-left-0';
-        const label = isUser ? 'You' : 'Basira AI';
+    function getCookie(n){let b=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)');return b?b.pop():'';}
 
-        const html = `
-            <div class="d-flex w-100 mb-3 ${alignClass}">
-                <div class="d-flex flex-column ${alignColClass}" style="max-width: 70%;">
-                    <div class="p-3 rounded-3 shadow-sm ${bgClass}">
-                        ${text.replace(/\n/g, '<br>')}
-                    </div>
-                    <small class="text-muted mt-1" style="font-size: 0.7rem;">${label}</small>
-                </div>
-            </div>
-        `;
-        chatLog.insertAdjacentHTML('beforeend', html);
-        scrollToBottom();
+    if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+        recognition.onstart = () => { micBtn.style.color = '#ef4444'; micBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 24px;">graphic_eq</span>'; };
+        recognition.onend = () => {
+            micBtn.style.color = ''; 
+            micBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 24px;">mic_none</span>';
+            if (userInput.value.trim()) { wasSpeechInput = true; chatForm.requestSubmit(); }
+        };
+        recognition.onresult = (e) => { userInput.value = e.results[0][0].transcript; };
+        micBtn.onclick = () => { recognition.start(); };
     }
 
-    function scrollToBottom() {
-        chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    async function sendMessage() {
-        const text = chatInput.value.trim();
-        if (!text) return;
-
-        appendMessage('user', text);
-        chatInput.value = '';
-        
-        try {
-            const response = await fetch(`/chatbot/${sessionId}/send/`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: text})
-            });
-            const data = await response.json();
-            
-            if (data.response) {
-                appendMessage('model', data.response);
-            } else {
-                appendMessage('model', "⚠️ Error: No response.");
-            }
-        } catch (error) {
-            console.error(error);
-            appendMessage('model', "⚠️ Error: Connection failed.");
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text.replace(/<\/?[^>]+(>|$)/g, ""));
+            utterance.onstart = () => { stopSpeechBtn.style.display = 'flex'; };
+            utterance.onend = () => { stopSpeechBtn.style.display = 'none'; };
+            speechSynthesis.speak(utterance);
         }
     }
-    
-    chatInput.addEventListener("keypress", function(event) {
-        if (event.key === "Enter") sendMessage();
-    });
-    
-    scrollToBottom();
+    stopSpeechBtn.onclick = () => { speechSynthesis.cancel(); stopSpeechBtn.style.display = 'none'; };
+
+    chatForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const msg = userInput.value.trim();
+        if (!msg) return;
+        userInput.value = '';
+
+        container.innerHTML += `<div class="message-row user"><div class="avatar user-avatar"><span class="material-symbols-outlined" style="font-size: 20px;">person</span></div><div class="message-content">${msg}</div></div>`;
+        loadingRow.style.display = 'flex';
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        const fd = new FormData();
+        fd.append('message', msg);
+        fd.append('session_id', sessionId);
+
+        try {
+            const res = await fetch("{% url 'send_message' %}", { method: 'POST', body: fd, headers: {'X-CSRFToken': getCookie('csrftoken')} });
+            const data = await res.json();
+            
+            loadingRow.style.display = 'none';
+            container.innerHTML += `<div class="message-row model"><div class="avatar bot-avatar"><span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span></div><div class="message-content">${data.response}</div></div>`;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            if (wasSpeechInput) { speakText(data.response); wasSpeechInput = false; }
+            if (!sessionId && data.session_id) location.href = `/chatbot/${data.session_id}/`;
+        } catch (err) { loadingRow.style.display = 'none'; }
+    };
+
+    document.getElementById('doc-file').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('session_id', sessionId);
+
+        try {
+            const res = await fetch("{% url 'upload_document' %}", { method: 'POST', body: fd, headers: {'X-CSRFToken': getCookie('csrftoken')} });
+            const data = await res.json();
+            if (res.ok) {
+                if (sessionId && sessionId !== "None" && sessionId !== "") location.reload();
+                else location.href = `/chatbot/${data.session_id}/`;
+            }
+        } catch (err) { alert("Upload failed"); }
+    };
+
+    async function deleteDoc(id) {
+        if (confirm("Remove context?")) {
+            await fetch(`/chatbot/delete-document/${id}/`, { method: 'POST', headers: {'X-CSRFToken': getCookie('csrftoken')} });
+            location.reload();
+        }
+    }
+
+    async function deleteSession(id) {
+        if (confirm("Delete session?")) {
+            await fetch(`/chatbot/delete-chat/${id}/`, { method: 'POST', headers: {'X-CSRFToken': getCookie('csrftoken')} });
+            location.href = "{% url 'chat_home' %}";
+        }
+    }
+
+    window.onload = () => { chatWindow.scrollTop = chatWindow.scrollHeight; };
 </script>
 {% endblock %}

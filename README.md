@@ -1,66 +1,59 @@
-# Basira - Intelligent Web Scraping & Data Analysis Platform
+# Basira - Intelligent Web Scraping & AI Insights Platform
 
-Basira is a comprehensive web service designed for automated data extraction, structured archiving, and AI-powered analysis. Built as a capstone project, it integrates advanced web scraping techniques with Generative AI to provide actionable insights for e-commerce and academic research.
+Basira is an enterprise-grade web service designed for automated data extraction, structured archiving, and high-fidelity AI analysis. Built as a capstone project, it leverages the **Gemini 2.5 Flash** engine to transform raw web data into strategic e-commerce intelligence and academic research synthesis.
 
+---
 
-## 🚀 Key Features
+## Key Features
 
-1. E-Commerce Scraper (core)
+### 1. E-Commerce Intelligence Dashboard (Core)
+* **Targeted Extraction:** Automated scraping of product prices, ratings, and high-resolution images from major platforms like Dumyah and Matalan.
+* **Real-time Progress Monitoring:** A dynamic, color-coded alert system that tracks scraping jobs in real-time with states for **Running** (blue), **Success** (green), and **Error** (red).
+* **Market Analysis Suite:** High-contrast, multi-shade purple visual dashboards powered by **Chart.js** for price distribution and trend analysis.
+* **Enterprise Scaling:** A UI designed with large typography (titles up to 3.5rem) and significant whitespace for maximum readability.
+* **Format-Agnostic Export:** One-click downloads for datasets in structured CSV or JSON formats.
 
-Targeted Scraping: Automated extraction of product data (prices, ratings, images) from supported sites like Dumyah and Matalan.
+### 2. Research Archive ETL (archive_etl)
+* **Longitudinal Pipeline:** Automated harvesting and archiving of news articles from regional sources (e.g., Jordan News, Ammon News).
+* **Multi-lingual Cleaning:** Intelligent extraction of English and Arabic content with automatic URL bypass for legacy structures.
+* **Thematic AI Synthesis:** Uses Google Gemini to generate thematic summaries, identify narrative shifts, and determine article sentiment.
 
-Market Analysis: Visual dashboards for price distribution and product comparisons.
+### 3. AI Consultant Chatbot (chatbot)
+* **Knowledge Base Integration:** Upload PDF research documents to provide direct context to the AI advisor.
+* **MENA Market Expertise:** Specialized system instructions for marketing strategy and digital transformation within the Middle Eastern market.
+* **Voice Interface:** Integrated web speech recognition and text-to-speech for hands-free strategic consultation.
+* **Modern UI:** A sidebar-driven interface with full session history management and high-fidelity components.
 
-Export: Download datasets in CSV or JSON formats.
+---
 
-2. Research Archive ETL (archive_etl)
+## Tech Stack
 
-Longitudinal Data: Automated pipeline to harvest and archive news articles from sources like Jordan News and Ammon News.
+* **Backend:** Django 5.0 (Python)
+* **Task Management:** Celery + Redis (Asynchronous processing)
+* **Scraping Engine (Hybrid):** * **Playwright:** Primary engine for E-commerce scraping (using Chromium).
+    * **Selenium + Selenium Stealth:** Specialized engine for Research Archive/News harvesting.
+* **Generative AI:** Google Gemini 2.5 Flash (Dynamic selector detection & thematic synthesis).
+* **Frontend:** HTML5, CSS3 (Enterprise Scale), Bootstrap 5, Chart.js.
+* **Database:** SQLite (Development) / PostgreSQL (Production)
 
-Smart Extraction: Handles English and Arabic content, bypasses legacy URL structures, and cleans article text.
+---
 
-Thematic Analysis: Uses Google Gemini AI to generate summaries, identify key themes, and determine narrative tone for collected articles.
+## Prerequisites
 
-3. AI Consultant Chatbot (chatbot)
+* **Python 3.10+**
+* **Docker Desktop** (For running the Redis message broker)
+* **Google Chrome** (Installed on host machine for Selenium drivers)
+* **Playwright Browsers:** Chromium (Installed via `playwright install`)
+* **Git**
 
-Interactive Advisor: A built-in chatbot to discuss data trends, marketing strategies, and research methodologies.
+---
 
-Unified Interface: Modern chat UI with history management.
+## Installation & Setup
 
-## 🛠️ Tech Stack
-
-Backend: Django 5.0 (Python)
-
-Task Queue: Celery + Redis
-
-Scraping: Selenium + Selenium Stealth (Headless Chrome)
-
-Database: SQLite (Default) / PostgreSQL (Production ready)
-
-AI Engine: Google Gemini Pro
-
-Frontend: HTML5, CSS3, Bootstrap 5, Chart.js
-
-Containerization: Docker (for Redis)
-
-## ⚙️ Prerequisites
-
-Python 3.10+
-
-Docker Desktop (for running Redis)
-
-Google Chrome (installed on the host machine for Selenium)
-
-Git
-
-## 📥 Installation & Setup
-
-1. Clone the Repository
-
-```console
+### 1. Clone the Repository
+```bash
 git clone [https://github.com/Malek-Qaraleh/Basira.git](https://github.com/Malek-Qaraleh/Basira.git)
 cd Basira
-```
 
 
 2. Create a Virtual Environment
@@ -100,7 +93,7 @@ You need an admin account to access the Django Admin interface.
 python manage.py createsuperuser
 ```
 
-## 🚀 Running the Application
+## Running the Application
 
 To run Basira, you need to run three separate processes simultaneously (use separate terminals).
 
@@ -133,7 +126,7 @@ python manage.py runserver
 
 Access the application at: http://127.0.0.1:8000/
 
-## 📖 Usage Guide
+## Usage Guide
 
 Setting up News Sources (Admin)
 
@@ -169,7 +162,7 @@ The system will scrape products, prices, and images in the background.
 
 View the Dashboard for price distribution charts and AI insights.
 
-## 👥 The Team
+## The Team
 
 Malek Al-Qaraleh
 
