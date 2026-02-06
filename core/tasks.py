@@ -97,10 +97,9 @@ def run_ai_scrape_job(self, job_id: int):
         
         if job.batch:
             job.batch.duration = execution_time
-            # This save now commits BOTH the duration AND the ai_summary safely
             job.batch.save()
 
-        return {'status': 'success', 'job_id': job_id, 'products_count': created_count, 'duration': execution_time}
+        return {'status': 'success', 'job_id': job_id, 'products_count': created_count, 'duration': execution_time, 'ai_summary': job.batch.ai_summary}
 
     except PermissionError as e:
         execution_time = time.time() - start_time

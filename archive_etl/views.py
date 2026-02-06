@@ -1,6 +1,6 @@
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 import markdown
 from .models import ResearchRequest
@@ -83,3 +83,21 @@ def export_research_csv(request, pk):
         ])
         
     return response
+
+@login_required
+def batch_status(request, batch_id):
+    """
+    Returns the real-time status of a research request for the dashboard polling.
+    """
+    req = get_object_or_404(ResearchRequest, pk=batch_id, user=request.user)
+    
+    return JsonResponse({
+        "product_count": req.articles.count(), 
+        "jobs": [
+            {
+                "status": req.status,
+                #'query' to 'topic' (or whatever you named the field)
+                "query": req.topic if hasattr(req, 'topic') else "Research Task"
+            }
+        ]
+    })
